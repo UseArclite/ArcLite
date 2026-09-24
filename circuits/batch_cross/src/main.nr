@@ -151,6 +151,26 @@ fn main(
     }
     assert(mask == defer_mask);
 
+    // No order may select a row the committed root does not cover.
+    //
+    // `prices_root` chains only the rows below `asset_count` — that is what lets a short table
+    // hash the way the contract hashed it. The consequence is that every trailing row is free:
+    // its contents do not reach the root, so `root == prices_root_pub` holds whatever they are.
+    // `select_entry` proves the selector is one-hot across all 32 rows and says nothing about
+    // *which* row, so without this loop a prover could place an arbitrary price in row 31 and
+    // trade an order against it while still matching the reference the contract committed.
+    //
+    // That is the whole of the venue's price claim, so it is constrained directly rather than
+    // inferred from the root. Zeroing the out-of-range selectors also keeps the one-hot sum
+    // honest: exactly one bit is set, and now it can only be set on a row that was priced.
+    for i in 0..N_ORDERS {
+        for a in 0..MAX_ASSETS {
+            if a >= asset_count {
+                assert(asset_selector[i][a] == 0);
+            }
+        }
+    }
+
     // Resolved once per order. `select_entry` is a full one-hot pass over the table, so calling
     // it again for each section would have tripled the cost of the most expensive lookup here.
     let mut row: [PriceEntry; N_ORDERS] = [entries[0]; N_ORDERS];

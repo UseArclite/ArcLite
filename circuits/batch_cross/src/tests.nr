@@ -819,6 +819,43 @@ fn cannot_hide_a_guard_from_the_published_mask() {
 }
 
 #[test(should_fail)]
+fn cannot_select_a_price_row_the_committed_root_does_not_cover() {
+    // The trailing-row attack, isolated to the one thing it turns on.
+    //
+    // `prices_root` chains only the rows below `asset_count` — that is what lets a short table
+    // hash exactly the way the contract hashed it. Every row above the count is therefore free:
+    // nothing in it reaches the root, so `root == prices_root_pub` holds whatever it contains.
+    // `select_entry` proves the selector is one-hot and says nothing about *which* row.
+    //
+    // The row here is a byte-for-byte copy of the live one, so every dependent witness — the
+    // quote division, the pro-rata split, the book, the receipts — stays valid. Nothing is
+    // mispriced. The *only* defect is that the selected row sits outside the committed table.
+    //
+    // That is deliberate. A test that also forged the price would fail on the quote arithmetic
+    // and prove nothing about the selector. If the circuit accepts this, it accepts any content
+    // in that row, because the root never sees it.
+    let mut c = honest_case();
+
+    // `honest_case` commits one row, so row 1 is outside the table.
+    c.entries[1] = c.entries[0];
+
+    for i in 0..N_ORDERS {
+        c.asset_selector[i][0] = 0;
+        c.asset_selector[i][1] = 1;
+    }
+    c.asset_buy_total[1] = c.asset_buy_total[0];
+    c.asset_sell_total[1] = c.asset_sell_total[0];
+    c.asset_matched[1] = c.asset_matched[0];
+    c.buy_is_smaller[1] = c.buy_is_smaller[0];
+    c.asset_buy_total[0] = 0;
+    c.asset_sell_total[0] = 0;
+    c.asset_matched[0] = 0;
+    c.buy_is_smaller[0] = 0;
+
+    run(c);
+}
+
+#[test(should_fail)]
 fn cannot_swap_in_a_better_price_after_sealing() {
     // Same shape, different motive: prove against a table whose reference price is higher than
     // the one committed. The seal-then-price ordering denies the operator the option; this
