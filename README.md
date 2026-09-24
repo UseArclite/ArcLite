@@ -21,13 +21,6 @@ Sealed orders. Reference prices committed on chain. Public proofs.
 
 ---
 
-> [!WARNING]
-> **The contracts in this repository are unaudited.** They are deployed on Robinhood Chain mainnet
-> and handle real assets. Nothing here is an offer, a solicitation, or investment advice. Access is
-> subject to screening and jurisdiction eligibility. Read [Security](#security) before depositing.
-
----
-
 ## Overview
 
 ArcLite is a **uniform-price batch auction** for tokenized equities and ETFs, running on
