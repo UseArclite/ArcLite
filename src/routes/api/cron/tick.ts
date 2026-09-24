@@ -6,6 +6,7 @@ import { syncWindowsToChain } from "@/server/chain-windows";
 import { matchPricedWindows, revealSealedWindows } from "@/server/pipeline";
 import { settleMatchedWindows } from "@/server/settle";
 import { keepTestnetFeedsAlive } from "@/server/feed-keeper";
+import { authorizeCron } from "@/server/cron-auth";
 
 /**
  * The window lifecycle tick.
@@ -21,11 +22,11 @@ export const Route = createFileRoute("/api/cron/tick")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const secret = process.env.CRON_SECRET;
-        const auth = request.headers.get("authorization");
-        if (secret && auth !== `Bearer ${secret}`) {
-          return new Response("unauthorized", { status: 401 });
-        }
+        // Fail closed. This used to be `if (secret && ...)`, which is only a check when the
+        // secret is set — so a deployment that lost `CRON_SECRET` accepted every anonymous
+        // caller, silently, while continuing to look healthy.
+        const auth = authorizeCron(request);
+        if (!auth.ok) return auth.response;
         if (!hasDb()) return Response.json({ skipped: "no DATABASE_URL" }, { status: 200 });
 
         const started = Date.now();

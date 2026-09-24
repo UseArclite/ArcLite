@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { db, hasDb } from "@/server/db";
+import { cronConfigured } from "@/server/cron-auth";
 
 /**
  * Liveness and dependency check.
@@ -247,19 +248,30 @@ export const Route = createFileRoute("/api/health")({
 
         const body = {
           service: "arclite-rh",
-          status: chain.ok && dbStatus.ok !== false ? "ok" : "degraded",
+          status: chain.ok && dbStatus.ok !== false && cronConfigured() ? "ok" : "degraded",
           stage: process.env.ARCLITE_STAGE ?? "preview",
           chainId,
           chain,
           db: dbStatus,
           relayer,
           window: await checkWindowChain(),
+          // A deployment that lost CRON_SECRET now refuses to run scheduled work rather than
+          // running it for anyone, which is the safe direction and a silent one: the venue simply
+          // stops advancing. This is where that becomes visible.
+          cron: {
+            configured: cronConfigured(),
+            note: cronConfigured()
+              ? undefined
+              : "CRON_SECRET missing or too short; the venue will not advance",
+          },
           commit: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
           region: process.env.VERCEL_REGION ?? null,
           at: new Date().toISOString(),
         };
 
-        const healthy = chain.ok && dbStatus.ok !== false;
+        // Unconfigured crons are a degraded venue, not a healthy one. Without this the endpoint
+        // an uptime monitor watches would stay green while nothing sealed, priced or settled.
+        const healthy = chain.ok && dbStatus.ok !== false && cronConfigured();
         return new Response(JSON.stringify(body, null, 2), {
           status: healthy ? 200 : 503,
           headers: { "content-type": "application/json", "cache-control": "no-store" },
