@@ -15,7 +15,6 @@ Sealed orders. Reference prices committed on chain. Public proofs.
 
 [![Network](https://img.shields.io/badge/Robinhood%20Chain-4663-e8bfd6?style=flat-square)](https://robinhoodchain.blockscout.com)
 [![Proofs](https://img.shields.io/badge/Proofs-Noir%20%C2%B7%20UltraHonk-00b9e4?style=flat-square)](https://noir-lang.org)
-[![Audit](https://img.shields.io/badge/Audit-none-c82750?style=flat-square)](#security)
 
 </div>
 
