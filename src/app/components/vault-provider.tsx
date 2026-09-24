@@ -167,6 +167,18 @@ export interface VaultValue {
   poolAssets: PoolAsset[];
   /** Rebuild this vault's deposit records from the chain. Safe to re-run. */
   recover: () => Promise<{ ok: boolean; found?: number; reason?: string }>;
+  /**
+   * Seal one epoch's viewing key to an auditor's published key.
+   *
+   * What comes back is a sealed box, not a key: `ivk_epoch = poseidon2(ivk, epoch)` reconstructs
+   * exactly that epoch's notes and cannot walk backwards to the master. The scope *is* the key
+   * rather than a flag someone could flip, which is the difference between a disclosure boundary
+   * and a promise to respect one.
+   */
+  sealDisclosure: (
+    epoch: number,
+    auditorPublicKey: string,
+  ) => Promise<{ ok: boolean; sealed?: string; reason?: string }>;
   /** True only on testnet, where the tokens have an open faucet and no issuer to ask. */
   faucetAvailable: boolean;
   /** Size of the whole commitment set — the anonymity set this vault hides in. */
@@ -1113,6 +1125,19 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     ],
   );
 
+  const sealDisclosure = useCallback(
+    async (epoch: number, auditorPublicKey: string) => {
+      if (status !== "unlocked") return { ok: false, reason: "Open your private vault first." };
+      const response = await ask({ type: "seal-disclosure", epoch, auditorPublicKey });
+      if (response.type === "error") return { ok: false, reason: response.error };
+      if (response.type !== "disclosure-sealed") {
+        return { ok: false, reason: "the vault did not seal the key" };
+      }
+      return { ok: true, sealed: response.sealed };
+    },
+    [status, ask],
+  );
+
   const submitOrder = useCallback(
     async (order: { assetId: string; units: string; side: "buy" | "sell" }) => {
       if (status !== "unlocked") return { ok: false, reason: "Open your private vault first." };
@@ -1228,6 +1253,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         legacyNotes,
         poolAssets: poolAssets ?? [],
         recover,
+        sealDisclosure,
         priceE18,
         transactions,
         spentUnknown,

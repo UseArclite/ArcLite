@@ -43,7 +43,9 @@ export type Feature =
   /** #24 — How private this position actually is, including when the answer is "not". */
   | "privacy-meter"
   /** #16 — A price scale and a hover readout on the reference chart. */
-  | "chart-scale";
+  | "chart-scale"
+  /** #25 — Seal one epoch's viewing key to an auditor. */
+  | "disclosure";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be

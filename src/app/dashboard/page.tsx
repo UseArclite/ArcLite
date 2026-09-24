@@ -23,6 +23,7 @@ import { WindowRitual } from "../components/window-ritual";
 import { SettlementWatch } from "../components/settlement-watch";
 import { PrivacyMeter } from "../components/privacy-meter";
 import { MarketChart } from "../components/market-chart";
+import { DisclosurePanel } from "../components/disclosure-panel";
 import { feature } from "../lib/features";
 import { SESSION_POLICY, type SessionKind } from "@/lib/chain/sessions";
 import { ConnectButton } from "../components/connect-button";
@@ -533,6 +534,7 @@ export default function Dashboard() {
                   )}
                 </p>
                 <ReceiptsPanel />
+                {feature("disclosure") && <DisclosurePanel />}
               </section>
             </div>
           </TabsContent>

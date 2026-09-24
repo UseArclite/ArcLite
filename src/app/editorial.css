@@ -302,3 +302,13 @@ html{scroll-padding-top:95px}
  .chart-scale{width:52px}
  .market-chart.has-axis .chart-axis{padding-right:52px}
 }
+
+/* #25 — controlled disclosure. */
+.disclosure-panel{margin-top:22px;padding-top:18px;border-top:1px solid #08084222}
+.disclosure-panel .sealed-order-fields{margin-top:12px}
+.disclosure-sealed{margin-top:14px;padding:13px 14px;border:1px solid #08084226;background:#0808420a}
+.disclosure-sealed p{margin:0 0 9px;font:11px/1.6 var(--sans);color:#3d3a5e}
+.disclosure-sealed b{color:#080842}
+.disclosure-sealed code{display:block;font:10px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#4d496a;word-break:break-all;max-height:64px;overflow-y:auto;background:#faf8fb;border:1px solid #08084218;padding:8px}
+.disclosure-sealed .reset-demo{margin-top:9px;display:inline-flex;align-items:center;gap:6px}
+.disclosure-panel .guard-result{margin-top:14px}

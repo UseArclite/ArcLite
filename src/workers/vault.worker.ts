@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 import { commitment as noteCommitment, nullifier } from "@/lib/notes/note";
 import { sealPayload } from "@/lib/notes/order-seal";
+import { sealViewingKey, toHex } from "@/lib/notes/disclosure";
 import { signSpend } from "@/lib/notes/vault";
 import { buildUnshieldWitness } from "@/lib/notes/unshield";
 import { proveUnshield } from "@/lib/notes/browser-prover";
@@ -62,6 +63,21 @@ export type VaultRequest =
       }[];
       /** Nullifiers already published on-chain, as decimal strings. */
       spent?: string[];
+    }
+  | {
+      /**
+       * Seal one epoch's viewing key to an auditor.
+       *
+       * Here rather than on the main thread because the input is the master `ivk`. Sealing is
+       * the one operation that deliberately hands out key material, so the material it hands out
+       * has to be the derived epoch key and nothing else — and the only way to guarantee that is
+       * for the master never to cross this boundary.
+       */
+      id: number;
+      type: "seal-disclosure";
+      epoch: number;
+      /** The auditor's published X25519 key, 32 bytes, hex. */
+      auditorPublicKey: string;
     }
   | {
       /** The commitment for a note this vault is about to shield. */
@@ -172,6 +188,13 @@ export type VaultResponse =
       balances: { assetId: string; units: string }[];
     }
   | { id: number; type: "deposit-prepared"; commitment: string; counter: number }
+  | {
+      id: number;
+      type: "disclosure-sealed";
+      /** The sealed box, hex. Opaque to everything but the auditor's secret key. */
+      sealed: string;
+      epoch: number;
+    }
   | {
       id: number;
       type: "recovered";
@@ -350,6 +373,27 @@ async function handle(request: VaultRequest): Promise<VaultResponse> {
         // Named rather than silently dropped: a deposit the search could not place is a note
         // this vault cannot spend, and the holder should know it exists.
         unmatched: [...wanted.keys()],
+      };
+    }
+
+    case "seal-disclosure": {
+      if (!keys) return { id: request.id, type: "error", error: "vault is locked" };
+      const pk = hexToBytes(request.auditorPublicKey);
+      if (pk.length !== 32) {
+        return {
+          id: request.id,
+          type: "error",
+          error: "an auditor key is 32 bytes — that is " + pk.length,
+        };
+      }
+      // `sealViewingKey` derives `ivk_epoch` itself and seals only that. The master key is read
+      // here and nowhere else, and nothing derived from it is returned except the box.
+      const sealed = await sealViewingKey(keys.ivk, request.epoch, pk);
+      return {
+        id: request.id,
+        type: "disclosure-sealed",
+        sealed: toHex(sealed),
+        epoch: request.epoch,
       };
     }
 
