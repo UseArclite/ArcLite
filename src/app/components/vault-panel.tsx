@@ -464,36 +464,98 @@ function Deposit() {
  * already has its records does not need it. Somebody who does need it will have arrived here
  * looking at a balance of zero.
  */
+/**
+ * Proving the recovery works, before anything is wrong.
+ *
+ * `recover()` has always worked: `shield` is a public transfer, so the chain knows the asset, the
+ * amount and the depositor, and the only unknown is a small counter the worker can search. What
+ * it has never been is *reassuring* — it was a repair tool, worded for a repair, and the person
+ * who found it was already looking at a balance of zero and wondering whether their money was
+ * gone.
+ *
+ * That is the wrong moment to learn whether self-custody holds. So the same machinery is offered
+ * as a drill: run the whole thing, change nothing, and say what would have happened. A rehearsal
+ * that took a shortcut would only prove the shortcut works, so this one does not — the log scan,
+ * the counter search and the regeneration inside the worker are the real ones, and the only step
+ * skipped is writing the answer down.
+ */
 function Recover() {
   const t = useT();
   const vault = useVault();
-  const [busy, setBusy] = useState(false);
-  const [said, setSaid] = useState<string | null>(null);
+  const [busy, setBusy] = useState<"rehearse" | "repair" | null>(null);
+  const [said, setSaid] = useState<{ text: string; ok: boolean } | null>(null);
 
-  async function run() {
-    setBusy(true);
+  async function run(dryRun: boolean) {
+    setBusy(dryRun ? "rehearse" : "repair");
     setSaid(null);
-    const result = await vault.recover();
-    setSaid(
-      result.ok
-        ? result.found
-          ? `Recovered ${result.found} deposit${result.found === 1 ? "" : "s"} from the chain.`
-          : "Nothing to recover — this vault's records are already complete."
-        : (result.reason ?? "Could not read the chain."),
-    );
-    setBusy(false);
+    const r = await vault.recover({ dryRun });
+
+    if (!r.ok) {
+      setSaid({ text: r.reason ?? "Could not read the chain.", ok: false });
+      setBusy(null);
+      return;
+    }
+
+    const onChain = r.onChain ?? 0;
+    const found = r.found ?? 0;
+    const missed = onChain - found;
+
+    if (dryRun) {
+      setSaid({
+        // The claim, checked rather than asserted: this browser was just wiped in principle and
+        // everything came back from a signature and public logs.
+        text:
+          missed === 0
+            ? `Rebuilt ${found} of ${onChain} deposit${onChain === 1 ? "" : "s"} from the chain and your signature alone. If you cleared this browser tomorrow, all of it would come back. Nothing was changed.`
+            : `Rebuilt ${found} of ${onChain} deposits. ${missed} could not be regenerated — tell us before you rely on this, because that is the case worth understanding. Nothing was changed.`,
+        ok: missed === 0,
+      });
+    } else {
+      setSaid({
+        text:
+          found === 0
+            ? "Nothing to recover — this vault's records are already complete."
+            : `Recovered ${found} deposit${found === 1 ? "" : "s"} from the chain${
+                r.alreadyKnown ? `, ${r.alreadyKnown} of which this browser already knew` : ""
+              }.`,
+        ok: true,
+      });
+    }
+    setBusy(null);
   }
 
   return (
     <div className="vault-recover">
-      <button className="reset-demo" onClick={() => void run()} disabled={busy}>
-        {busy ? "Reading the chain…" : "Recover notes from chain"}
-      </button>
       <p className="ticket-note">
-        {said ??
-          "Balance empty on a new browser? Your notes are found from records kept here, and the " +
-            "chain holds what is needed to rebuild them."}
+        {t(
+          "Your notes are found using records this browser keeps. The chain holds everything needed to rebuild those records — a deposit is a public transfer, so it knows the asset, the amount and who sent it, and your signature supplies the rest.",
+        )}
       </p>
+      <div className="vault-deposit-actions">
+        <button
+          className="seal-order-button"
+          onClick={() => void run(true)}
+          disabled={busy !== null}
+        >
+          <ShieldCheck size={15} />
+          {busy === "rehearse" ? t("Reading the chain…") : t("Test your recovery")}
+        </button>
+        <button className="reset-demo" onClick={() => void run(false)} disabled={busy !== null}>
+          {busy === "repair" ? t("Reading the chain…") : t("Rebuild my records")}
+        </button>
+      </div>
+      {said && (
+        <p role="status" className={said.ok ? "ticket-note" : "ticket-error"}>
+          {said.text}
+        </p>
+      )}
+      {!said && (
+        <p className="ticket-note">
+          {t(
+            "Testing changes nothing. It runs the real recovery and reports what would have come back — which is worth knowing now rather than on the day a browser is cleared.",
+          )}
+        </p>
+      )}
     </div>
   );
 }

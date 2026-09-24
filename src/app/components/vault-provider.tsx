@@ -165,8 +165,23 @@ export interface VaultValue {
   legacyNotes: LegacyNote[];
   /** What `shield` will accept on this network, from the registry. Empty until it loads. */
   poolAssets: PoolAsset[];
-  /** Rebuild this vault's deposit records from the chain. Safe to re-run. */
-  recover: () => Promise<{ ok: boolean; found?: number; reason?: string }>;
+  /**
+   * Rebuild this vault's deposit records from the chain. Safe to re-run.
+   *
+   * With `dryRun` it performs the whole recovery — the log scan, the counter search, the
+   * regeneration inside the worker — and declines to write the result. That is the rehearsal:
+   * a real recovery that is not saved, rather than a simulation of one.
+   */
+  recover: (options?: { dryRun?: boolean }) => Promise<{
+    ok: boolean;
+    /** Deposits this address made, as the chain reports them. */
+    onChain?: number;
+    /** How many of those the vault could regenerate from its keys. */
+    found?: number;
+    /** How many it already had records for. */
+    alreadyKnown?: number;
+    reason?: string;
+  }>;
   /**
    * Seal one epoch's viewing key to an auditor's published key.
    *
@@ -625,63 +640,86 @@ export function VaultProvider({ children }: { children: ReactNode }) {
    * Runs against retired pools too. A note left in one is still withdrawable from it, and a
    * holder recovering on a new browser has no way to know it is there.
    */
-  const recover = useCallback(async (): Promise<{
-    ok: boolean;
-    found?: number;
-    reason?: string;
-  }> => {
-    if (status !== "unlocked" || !fingerprint) {
-      return { ok: false, reason: "Open your vault first." };
-    }
-    if (!address) return { ok: false, reason: "Connect the wallet that made the deposits." };
+  const recover = useCallback(
+    async (
+      options: { dryRun?: boolean } = {},
+    ): Promise<{
+      ok: boolean;
+      found?: number;
+      onChain?: number;
+      alreadyKnown?: number;
+      reason?: string;
+    }> => {
+      if (status !== "unlocked" || !fingerprint) {
+        return { ok: false, reason: "Open your vault first." };
+      }
+      if (!address) return { ok: false, reason: "Connect the wallet that made the deposits." };
 
-    setScanning(true);
-    try {
-      const pools = [null, ...clientDeployment().retiredPools];
-      const deposits: { assetId: string; units: string; commitment: string }[] = [];
-      for (const pool of pools) {
-        const url = pool
-          ? `/api/notes/deposits?address=${address}&pool=${pool}`
-          : `/api/notes/deposits?address=${address}`;
-        const res = await fetch(url, { credentials: "omit" });
-        const body = (await res.json()) as {
-          deposits?: { assetId: number; units: string; commitment: string }[];
-        };
-        for (const d of body.deposits ?? []) {
-          deposits.push({ assetId: String(d.assetId), units: d.units, commitment: d.commitment });
+      setScanning(true);
+      try {
+        const pools = [null, ...clientDeployment().retiredPools];
+        const deposits: { assetId: string; units: string; commitment: string }[] = [];
+        for (const pool of pools) {
+          const url = pool
+            ? `/api/notes/deposits?address=${address}&pool=${pool}`
+            : `/api/notes/deposits?address=${address}`;
+          const res = await fetch(url, { credentials: "omit" });
+          const body = (await res.json()) as {
+            deposits?: { assetId: number; units: string; commitment: string }[];
+          };
+          for (const d of body.deposits ?? []) {
+            deposits.push({ assetId: String(d.assetId), units: d.units, commitment: d.commitment });
+          }
         }
-      }
-      if (deposits.length === 0) {
-        return { ok: false, reason: "No deposits from this address were found on chain." };
-      }
+        if (deposits.length === 0) {
+          return { ok: false, reason: "No deposits from this address were found on chain." };
+        }
 
-      // Generous: counters are dense from zero, so the bound only has to exceed the number of
-      // deposits, and the search costs a hash per try.
-      const response = await ask({
-        type: "recover",
-        deposits,
-        maxCounter: deposits.length + 32,
-      });
-      if (response.type === "error") return { ok: false, reason: response.error };
-      if (response.type !== "recovered") return { ok: false, reason: "the vault did not answer" };
+        // Generous: counters are dense from zero, so the bound only has to exceed the number of
+        // deposits, and the search costs a hash per try.
+        const response = await ask({
+          type: "recover",
+          deposits,
+          maxCounter: deposits.length + 32,
+        });
+        if (response.type === "error") return { ok: false, reason: response.error };
+        if (response.type !== "recovered") return { ok: false, reason: "the vault did not answer" };
 
-      // Merge rather than replace: a browser that still holds records keeps any the chain scan
-      // could not place, and re-running this is never destructive.
-      const existing = loadDeposits(fingerprint);
-      const seen = new Set(existing.map((r) => `${r.epoch}:${r.counter}`));
-      const merged = [...existing];
-      for (const r of response.records) {
-        if (!seen.has(`${r.epoch}:${r.counter}`)) merged.push(r);
+        const existing = loadDeposits(fingerprint);
+        const seen = new Set(existing.map((r) => `${r.epoch}:${r.counter}`));
+        const fresh = response.records.filter((r) => !seen.has(`${r.epoch}:${r.counter}`));
+
+        // The rehearsal runs everything above — the same log scan, the same counter search, the
+        // same regeneration inside the worker — and stops here. It is a real recovery that is not
+        // written down, which is the only kind worth trusting: a drill that took a shortcut would
+        // prove the shortcut works.
+        if (options.dryRun) {
+          return {
+            ok: true,
+            onChain: deposits.length,
+            found: response.records.length,
+            alreadyKnown: response.records.length - fresh.length,
+          };
+        }
+
+        // Merge rather than replace: a browser that still holds records keeps any the chain scan
+        // could not place, and re-running this is never destructive.
+        saveDeposits(fingerprint, [...existing, ...fresh]);
+        await scanRef.current?.();
+        return {
+          ok: true,
+          onChain: deposits.length,
+          found: response.records.length,
+          alreadyKnown: response.records.length - fresh.length,
+        };
+      } catch (e) {
+        return { ok: false, reason: (e as Error).message };
+      } finally {
+        setScanning(false);
       }
-      saveDeposits(fingerprint, merged);
-      await scanRef.current?.();
-      return { ok: true, found: response.records.length };
-    } catch (e) {
-      return { ok: false, reason: (e as Error).message };
-    } finally {
-      setScanning(false);
-    }
-  }, [status, fingerprint, address, ask]);
+    },
+    [status, fingerprint, address, ask],
+  );
 
   const scan = useCallback(async () => {
     setScanning(true);

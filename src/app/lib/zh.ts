@@ -473,6 +473,12 @@ export const zh: Record<string, string> = {
   "PRIVACY, RIGHT NOW": "当前隐私状况",
   "CONTROLLED DISCLOSURE": "受控披露",
   "Vault open": "保险库已打开",
+  "Test your recovery": "测试你的恢复能力",
+  "Rebuild my records": "重建我的记录",
+  "Your notes are found using records this browser keeps. The chain holds everything needed to rebuild those records — a deposit is a public transfer, so it knows the asset, the amount and who sent it, and your signature supplies the rest.":
+    "你的票据是通过本浏览器保存的记录找到的。链上保存了重建这些记录所需的一切 —— 存入是一笔公开转账，因此链上知道资产、金额和发送方，其余部分由你的签名提供。",
+  "Testing changes nothing. It runs the real recovery and reports what would have come back — which is worth knowing now rather than on the day a browser is cleared.":
+    "测试不会改变任何数据。它会执行真实的恢复流程并告诉你能找回什么 —— 这件事值得现在就知道，而不是等到浏览器被清空的那天。",
   "locks in": "将于",
   "no automatic lock": "未设置自动锁定",
   "Lock after": "闲置多久后锁定",
