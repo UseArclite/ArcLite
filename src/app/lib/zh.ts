@@ -466,6 +466,11 @@ export const zh: Record<string, string> = {
   Amount: "金额",
   MAX: "全部",
   "raw units": "原始单位",
+  "Tell me when a window settles": "窗口结算时通知我",
+  "Notifications are blocked for this site. Outcomes still appear here.":
+    "本站的通知已被浏览器屏蔽。结果仍会显示在这里。",
+  "Settled on chain": "已在链上结算",
+  Dismiss: "关闭",
   "Enter an amount.": "请输入金额。",
   "Enter an amount greater than zero.": "请输入大于零的金额。",
   "Amounts are digits and at most one decimal point.": "金额只能包含数字，且最多一个小数点。",

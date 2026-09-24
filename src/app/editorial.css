@@ -228,3 +228,22 @@ html{scroll-padding-top:95px}
 .amount-raw{font:10px/1.5 var(--sans);color:#6a6789;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .amount-error{font:11px/1.5 var(--sans);color:#b02348}
 .amount-hint{font:10px/1.5 var(--sans);color:#6a6789}
+
+/* #21 — settlement outcomes. Fixed to the corner so an outcome survives whichever
+   tab is open, and above the safe-area inset so a phone's home bar does not sit on
+   the dismiss control. */
+.toast-stack{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:60;display:grid;gap:10px;width:min(360px,calc(100vw - 40px));pointer-events:none}
+.toast{pointer-events:auto;display:flex;align-items:flex-start;gap:10px;padding:13px 14px;border:1px solid #080842;background:#f0e9f0;box-shadow:5px 5px 0 #08084222;animation:toast-in .28s ease-out}
+.toast.is-filled{background:#c1f3f3}
+.toast.is-void,.toast.is-deferred{background:#f6eaf1}
+.toast b{display:block;font:600 12px/1.4 var(--sans);color:#080842}
+.toast p{margin:4px 0 0;font:11px/1.6 var(--sans);color:#3d3a5e}
+.toast a{display:inline-flex;align-items:center;gap:4px;margin-top:6px;font:11px/1 var(--sans);color:#0056a4}
+.toast>button{flex:0 0 auto;background:none;border:0;color:#4d496a;cursor:pointer;line-height:0;padding:2px}
+.toast>button:hover{color:#080842}
+@keyframes toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.toast{animation:none}}
+
+.notify-optin{display:inline-flex;align-items:center;gap:6px;margin:0 0 14px;padding:7px 11px;border:1px solid #08084244;background:#0808420a;color:#3d3a5e;font:11px/1 var(--sans);cursor:pointer}
+.notify-optin:hover{border-color:#080842;color:#080842}
+.notify-denied{display:flex;align-items:center;gap:6px;margin:0 0 14px;font:10px/1.5 var(--sans);color:#6a6789}

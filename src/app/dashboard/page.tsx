@@ -20,6 +20,7 @@ import {
 } from "../components/market-provider";
 import { AssetMark } from "../components/asset-mark";
 import { WindowRitual } from "../components/window-ritual";
+import { SettlementWatch } from "../components/settlement-watch";
 import { feature } from "../lib/features";
 import { SESSION_POLICY, type SessionKind } from "@/lib/chain/sessions";
 import { ConnectButton } from "../components/connect-button";
@@ -180,6 +181,10 @@ export default function Dashboard() {
 
   return (
     <main data-route="/dashboard" className="dashboard" id="top">
+      {/* Mounted for the whole dashboard, not inside a tab: an outcome that only arrives while
+          the Proofs tab happens to be open is one nobody sees. It shares the receipts panel's
+          query key, so the two dedupe rather than polling the venue twice. */}
+      {feature("settlement-alerts") && <SettlementWatch />}
       <div className="dashboard-shell">
         <div className="dashboard-title">
           <div>

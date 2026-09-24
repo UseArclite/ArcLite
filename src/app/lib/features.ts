@@ -37,7 +37,9 @@ export type Feature =
   /** #1 — The five-stage auction clock, replacing the one-line window status. */
   | "window-ritual"
   /** #3 — Decimal amounts in the forms, with the raw integer shown beneath. */
-  | "human-units";
+  | "human-units"
+  /** #21 — Say what became of an order, even with the tab in the background. */
+  | "settlement-alerts";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be
