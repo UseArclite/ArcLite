@@ -308,6 +308,9 @@ export interface WindowView {
   orderCount: number;
   fillCount: number;
   deferredSymbols: string[];
+  /** When the book actually froze, and when the window finished. Null until each happens. */
+  sealedAt: string | null;
+  settledAt: string | null;
   previous: {
     seq: number;
     status: WindowStatus;

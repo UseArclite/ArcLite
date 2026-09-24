@@ -436,6 +436,47 @@ export const zh: Record<string, string> = {
   // 参考价 for the reference, 份额 for raw units, 暗池 for the venue.
   "THIS SESSION": "本次会话",
   "YOUR POSITION": "你的持仓",
+
+  // The auction clock. 撮合 for crossing, 密封 for sealing, matching the existing vocabulary.
+  WINDOW: "窗口",
+  EPOCH: "纪元",
+  "SEALING IN": "距离密封",
+  Ready: "开放",
+  Sealed: "已密封",
+  Crossing: "撮合中",
+  Proof: "证明",
+  Settled: "已结算",
+  "The book is open. Orders arrive encrypted and nobody — us included — can read them.":
+    "订单簿开放。订单以加密形式到达，任何人 —— 包括我们 —— 都无法读取。",
+  "The book is frozen. Prices commit next, so the venue cannot see this book and then choose what it trades against.":
+    "订单簿已冻结。价格随后才在链上确定，因此交易场所无法先看到这本订单簿再选择撮合的参考价。",
+  "Matched size is the smaller side in full, split pro-rata. No fill rate is chosen by anyone.":
+    "撮合量为较小一方的全部数量，按比例分配。成交比例不由任何人选择。",
+  "One zero-knowledge proof for the whole batch, generated and verified on chain.":
+    "整批交易只用一个零知识证明，生成后在链上验证。",
+  "Nullifiers published, output notes spliced into the tree.":
+    "作废标识已公布，输出票据已并入承诺树。",
+  "order in this window": "笔订单在本窗口",
+  "orders in this window": "笔订单在本窗口",
+  Previous: "上一个",
+  window: "窗口",
+  "no counterparty": "无对手方",
+  "BOOK CLOSED": "订单簿已截止",
+  "s ago": " 秒前",
+  "m ago": " 分钟前",
+  "h ago": " 小时前",
+  settled: "已结算",
+  filled: "笔成交",
+  "was voided — nothing crossed and no note was spent":
+    "已作废 —— 没有任何撮合，也没有任何票据被花费",
+  "failed — nothing crossed and no note was spent": "已失败 —— 没有任何撮合，也没有任何票据被花费",
+  "Nothing was submitted, so there is nothing to seal — sealing an empty book pays gas to say nothing. The venue moves to the next window.":
+    "本窗口没有任何订单，因此无需密封 —— 密封空订单簿只会白白消耗 gas。系统将进入下一个窗口。",
+  "The book's time is up. The venue seals it on its next pass, within a minute.":
+    "订单簿时间已到。系统将在下一轮处理中完成密封，通常在一分钟内。",
+  "Reading the venue clock…": "正在读取交易场所时钟…",
+  "No window is open. The venue opens the next one on its own.":
+    "当前没有开放的窗口。系统会自动开启下一个。",
   "Robinhood Chain could not be reached to check which notes are already spent, so none are shown. Your notes are safe and nothing has been lost — this retries on its own every few seconds.":
     "无法连接 Robinhood Chain 来核对哪些票据已被花费，因此暂不显示任何票据。你的票据是安全的，没有任何损失 —— 系统会每隔几秒自动重试。",
 };

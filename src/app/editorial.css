@@ -168,3 +168,46 @@ html{scroll-padding-top:95px}
  .tx-row{flex-wrap:wrap}
  .tx-link{margin-left:33px}
 }
+
+/* #1 — the auction clock. Reuses the removed demo's visual grammar (numbered
+   stages, a filled state, the navy/cyan pair) without reusing its markup: the
+   old .batch-steps grid was four columns and the venue has five states. */
+.window-ritual{margin:22px 0 0;padding:18px 20px 16px;border:1px solid #08084233;background:#0808420a}
+.window-ritual.is-waiting{padding:16px 20px}
+.window-ritual.is-waiting p{margin:0;font:12px/1.6 var(--sans);color:#5b5878}
+.window-ritual>header{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.window-ritual>header .eyebrow{margin:0}
+.window-ritual>header strong{font:11px/1 var(--sans);letter-spacing:.08em;color:#4d496a;white-space:nowrap}
+.window-ritual>header strong b{font-variant-numeric:tabular-nums;font-size:15px;color:#080842;letter-spacing:0;margin-left:4px}
+
+.ritual-rail{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:18px 0 14px}
+.ritual-stage{display:flex;align-items:center;gap:8px;min-width:0;color:#8b8bae}
+.ritual-stage span{flex:0 0 auto;width:24px;height:24px;border:1px solid #8b8bae55;border-radius:50%;display:grid;place-items:center;font:600 9px/1 var(--sans);background:#e6e8f0}
+.ritual-stage b{font:600 11px/1.3 var(--sans);letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis}
+.ritual-stage.is-done{color:#4d496a}
+.ritual-stage.is-done span{background:#080842;color:#a8ecf1;border-color:#080842}
+.ritual-stage.is-now{color:#080842}
+.ritual-stage.is-now span{background:#b4edf1;border-color:#080842;color:#080842;box-shadow:0 0 0 3px #b4edf155}
+/* The bar sits under the rail and fills only across the open phase — once the book
+   is frozen the clock has stopped being the thing to watch. */
+.ritual-progress{grid-column:1 / -1;height:2px;background:#08084222;margin-top:2px}
+.ritual-progress i{display:block;height:100%;background:#080842;transition:width .9s linear}
+
+.ritual-now{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.ritual-caption{margin:0;flex:1 1 320px;font:12px/1.65 var(--sans);color:#3d3a5e}
+.ritual-count{margin:0;flex:0 0 auto;font:11px/1.6 var(--sans);color:#4d496a;font-variant-numeric:tabular-nums}
+.ritual-count b{font-size:15px;color:#080842}
+.ritual-count.is-pulsing b{animation:ritual-pulse .9s ease-out}
+@keyframes ritual-pulse{0%{color:#0079be}60%{color:#0079be}100%{color:#080842}}
+@media(prefers-reduced-motion:reduce){
+ .ritual-count.is-pulsing b{animation:none}
+ .ritual-progress i{transition:none}
+}
+
+.ritual-previous{margin:12px 0 0;padding-top:11px;border-top:1px solid #08084222;font:11px/1.6 var(--sans);color:#6a6789}
+
+@media(max-width:760px){
+ .ritual-rail{grid-template-columns:repeat(5,auto);justify-content:space-between;gap:4px}
+ .ritual-stage b{display:none}
+ .ritual-now{gap:10px}
+}

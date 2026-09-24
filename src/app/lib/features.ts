@@ -33,7 +33,9 @@ export type Feature =
   /** #9 — Transaction hashes, confirmation state and explorer links. */
   | "tx-receipts"
   /** #12 — What an order will cost, before it is submitted. */
-  | "preflight";
+  | "preflight"
+  /** #1 — The five-stage auction clock, replacing the one-line window status. */
+  | "window-ritual";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be

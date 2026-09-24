@@ -19,6 +19,7 @@ import {
   type Range,
 } from "../components/market-provider";
 import { AssetMark } from "../components/asset-mark";
+import { WindowRitual } from "../components/window-ritual";
 import { feature } from "../lib/features";
 import { SESSION_POLICY, type SessionKind } from "@/lib/chain/sessions";
 import { ConnectButton } from "../components/connect-button";
@@ -392,15 +393,21 @@ export default function Dashboard() {
                     </strong>
                   </div>
                 </div>
-                <div className="batch-status" role="status">
-                  <p>
-                    {liveWindow && liveWindow.status === "OPEN"
-                      ? `Window ${liveWindow.seq} is open — sealing in ${mmss(secondsToSeal)}. Every participant is watching the same clock.`
-                      : liveWindow
-                        ? `Window ${liveWindow.seq} · ${liveWindow.status.toLowerCase()}.`
-                        : "Waiting for the venue clock."}
-                  </p>
-                </div>
+                {/* The ritual replaces this line rather than sitting beside it: two window
+                    clocks on one panel is two things to reconcile. */}
+                {feature("window-ritual") ? (
+                  <WindowRitual />
+                ) : (
+                  <div className="batch-status" role="status">
+                    <p>
+                      {liveWindow && liveWindow.status === "OPEN"
+                        ? `Window ${liveWindow.seq} is open — sealing in ${mmss(secondsToSeal)}. Every participant is watching the same clock.`
+                        : liveWindow
+                          ? `Window ${liveWindow.seq} · ${liveWindow.status.toLowerCase()}.`
+                          : "Waiting for the venue clock."}
+                    </p>
+                  </div>
+                )}
               </section>
               <SealedOrderPanel />
               <section className="guards-panel">
