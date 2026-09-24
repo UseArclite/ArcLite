@@ -247,3 +247,28 @@ html{scroll-padding-top:95px}
 .notify-optin{display:inline-flex;align-items:center;gap:6px;margin:0 0 14px;padding:7px 11px;border:1px solid #08084244;background:#0808420a;color:#3d3a5e;font:11px/1 var(--sans);cursor:pointer}
 .notify-optin:hover{border-color:#080842;color:#080842}
 .notify-denied{display:flex;align-items:center;gap:6px;margin:0 0 14px;font:10px/1.5 var(--sans);color:#6a6789}
+
+/* #24 — the privacy meter. Coloured by verdict rather than uniformly reassuring:
+   a panel that looks the same when the answer is "no anonymity" is a panel nobody
+   reads twice. */
+.privacy-meter{margin:0 0 20px;padding:18px 20px 16px;border:1px solid #08084233;background:#0808420a}
+.privacy-meter.is-none{border-color:#b0234855;background:#b023480d}
+.privacy-meter.is-minimal{border-color:#b0234833;background:#b0234808}
+.privacy-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.privacy-top .eyebrow{margin:0}
+.privacy-top strong{display:block;margin-top:5px;font:400 26px/1.1 var(--display);color:#080842}
+.privacy-meter.is-none .privacy-top strong{color:#b02348}
+.privacy-set{text-align:right;font-variant-numeric:tabular-nums}
+.privacy-set b{display:block;font:400 26px/1.1 var(--display);color:#080842}
+.privacy-set small{display:block;font:10px/1.4 var(--sans);color:#6a6789}
+.privacy-headline{margin:12px 0 0;font:12px/1.7 var(--sans);color:#3d3a5e;max-width:62ch}
+.privacy-toggle{margin-top:12px;display:inline-flex;align-items:center;gap:5px;background:none;border:0;padding:0;color:#0056a4;font:11px/1 var(--sans);cursor:pointer}
+.privacy-toggle svg{transition:transform .2s}
+.privacy-toggle svg.is-open{transform:rotate(180deg)}
+.privacy-factors{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:11px}
+.privacy-factors li{display:flex;gap:9px;align-items:flex-start}
+.privacy-factors li>span:first-child{flex:0 0 auto;line-height:0;margin-top:2px;color:#6a6789}
+.privacy-factors li.is-good>span:first-child{color:#00719a}
+.privacy-factors b{display:block;font:600 11px/1.4 var(--sans);color:#080842}
+.privacy-factors small{display:block;margin-top:3px;font:11px/1.6 var(--sans);color:#4d496a}
+@media(prefers-reduced-motion:reduce){.privacy-toggle svg{transition:none}}

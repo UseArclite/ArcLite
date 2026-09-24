@@ -21,6 +21,7 @@ import {
 import { AssetMark } from "../components/asset-mark";
 import { WindowRitual } from "../components/window-ritual";
 import { SettlementWatch } from "../components/settlement-watch";
+import { PrivacyMeter } from "../components/privacy-meter";
 import { feature } from "../lib/features";
 import { SESSION_POLICY, type SessionKind } from "@/lib/chain/sessions";
 import { ConnectButton } from "../components/connect-button";
@@ -470,6 +471,8 @@ export default function Dashboard() {
             </div>
           </TabsContent>
           <TabsContent value="portfolio">
+            {/* Above the balance, because it changes what the balance means. */}
+            {feature("privacy-meter") && <PrivacyMeter />}
             <VaultPanel />
             <section className="portfolio-view" style={{ minHeight: "auto", marginTop: 20 }}>
               <div className="portfolio-note" style={{ marginTop: 0 }}>

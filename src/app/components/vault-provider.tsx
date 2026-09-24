@@ -172,6 +172,14 @@ export interface VaultValue {
   /** Size of the whole commitment set — the anonymity set this vault hides in. */
   leafCount: number;
   /**
+   * Distinct commitments in the tree, which is the crowd rather than the count.
+   *
+   * `leafCount` is `nextLeafIndex`, and a settlement splices a span-aligned block of 32 — so it
+   * counts the zero leaves alignment skipped over, which hide nobody. Describing privacy needs
+   * the number of real notes, not the height of the tree.
+   */
+  commitmentCount: number;
+  /**
    * The 1e18-scaled reference for a registry asset id, or 0n when the market has not answered.
    *
    * Exposed so the order panel can run the same affordability arithmetic the submit path runs.
@@ -1208,6 +1216,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         shield,
         shielding,
         leafCount: tree?.leafCount ?? 0,
+        commitmentCount: (tree?.leaves ?? []).filter((l) => l !== "0").length,
         deployed: tree?.deployed ?? false,
         scanning,
         error,

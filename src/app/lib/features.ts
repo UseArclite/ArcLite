@@ -39,7 +39,9 @@ export type Feature =
   /** #3 — Decimal amounts in the forms, with the raw integer shown beneath. */
   | "human-units"
   /** #21 — Say what became of an order, even with the tab in the background. */
-  | "settlement-alerts";
+  | "settlement-alerts"
+  /** #24 — How private this position actually is, including when the answer is "not". */
+  | "privacy-meter";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be
