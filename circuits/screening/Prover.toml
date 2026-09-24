@@ -1,0 +1,13 @@
+deposit_commitment = 0
+expiry = 0
+expiry_bucket = 0
+identity_secret = 0
+issuer_pk_x = 0
+issuer_pk_y = 0
+issuer_pubkey_hash = 0
+jurisdiction_code = 0
+jurisdiction_mask = 0
+sig_e_hi = 0
+sig_e_lo = 0
+sig_s_hi = 0
+sig_s_lo = 0

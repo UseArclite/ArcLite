@@ -1,0 +1,56 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+.output
+.vinxi
+.tanstack/**
+.nitro
+*.local
+
+# Wrangler / Cloudflare
+.wrangler/
+.dev.vars
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.vercel
+.env*
+!.env.example
+
+# ArcLite backend
+circuits/target/
+# The compiled circuit is build output, but the prover needs it at runtime and Noir is not
+# available in a Vercel build — so this one artifact is committed and copied into the function
+# bundle by the postbuild. Without it the prover throws ENOENT on every settlement, which reads
+# as a window that failed rather than a venue that cannot prove at all.
+!circuits/artifacts/
+ops/node_modules/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/lib/
+.wrangler/
+circuits/target/
+# The compiled circuit is build output, but the prover needs it at runtime and Noir is not
+# available in a Vercel build — so this one artifact is committed and copied into the function
+# bundle by the postbuild. Without it the prover throws ENOENT on every settlement, which reads
+# as a window that failed rather than a venue that cannot prove at all.
+!circuits/artifacts/
+circuits/generated/

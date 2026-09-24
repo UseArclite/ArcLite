@@ -1,0 +1,196 @@
+{
+  "network": "Robinhood Chain Testnet",
+  "chainId": 46630,
+  "deployedAt": "2026-09-21",
+  "deployedAtBlock": 122742512,
+  "deployer": "0x62072867795BcDEe3932942b00825c669abdbC97",
+  "explorer": "https://explorer.testnet.chain.robinhood.com",
+  "gasUsed": 37096321,
+  "costEth": "0.00037096",
+  "contracts": {
+    "EligibleRegistry": "0x9c4004d59f97b7993D621D867262f91745C594C7",
+    "EventCalendar": "0x336F7b0A26845Fb7Cd479A3e0C14A90Fa309AE5F",
+    "PriceCommitter": "0x478D11836CdFdDD60941Ffe08a02b2C2cc70E824",
+    "RwaDarkPool": "0x83572a4d1F0Aac4199caC26CCD59f6D25A717ca7",
+    "ScreeningVerifier": "0x2E9585C91CAD9f0B0528bF18654Ae94B27de052E",
+    "UnshieldVerifier": "0x59fF64533400A6605CCdA9Dd10d5AC1E5FF3Cc15",
+    "BatchCrossVerifier": "0x94D05E9c34DaC3022d94896298675EFB73e4c5b3",
+    "RwaDarkPool_v1_retired": "0x54c62F552449FD7031ddA89B978eC2925C411D01",
+    "RwaDarkPool_v2_retired": "0xE14B341d854354C767abdb634fC7B85652018222",
+    "TapeRegistry": "0x368Fa1c2F43B7b51a5e1Ef5fF6eB1f23CffD3136",
+    "DisclosureRegistry": "0x71A82F3a511e57bA9B130575c28169238711236f",
+    "BatchCrossVerifier_retired_v1": "0x4aC0aD54EFD3e13E7ca0D79100772f60dA486D8c",
+    "RwaDarkPool_v3_retired": "0x12721fBdB261Eeb5e4227f0C4f5C68d27c6b5668",
+    "BatchCrossVerifier_retired_v2": "0x4d3868b0a422791Ac12d65735745329Cf25dc656",
+    "TapeRegistry_retired_v1": "0x49580bb7Bb83Ac760Ebc8Be47567517630996c16"
+  },
+  "notes": {
+    "verifiers": "Real generated Honk verifiers, not mocks. Both the unshield and batch_cross fixtures verify against the deployed code, and a perturbed public input is rejected by it.",
+    "usdg": "Registered as the STABLE slot at its mainnet address; no USDG token exists on testnet, so the slot is declared but unusable there.",
+    "assets": "Three test assets registered through the ordinary registerAsset path — no bypass, no relaxed check.",
+    "governance": "All roles held by the deployer EOA. Testnet only; mainnet requires the timelock.",
+    "screening": "shieldVerifier is set to address(0), so deposits are OPEN on testnet. Producing a ScreeningGate attestation needs a Schnorr signature from an issuer key that does not exist yet. The unshield verifier is deliberately left real: the deposit gate decides who may enter, the withdrawal gate is what stands between a forged proof and the pool's funds.",
+    "heartbeat": "sequencerGracePeriod lowered from 3600s to 60s on testnet (setHeartbeatParams(180, 60)). The grace exists because feeds are stale right after a sequencer outage; the testnet feeds are stand-ins that never went down, so an hour of pool-wide deferral after every gap prevents the venue from being exercised at all. Mainnet must keep the full grace."
+  },
+  "testnetAssets": {
+    "note": "Robinhood Chain testnet has no tokenized equities and no Chainlink feeds, so these are stand-ins carrying the exact surface EligibleRegistry probes. They refuse to deploy on chain 4663 or 1 — the guard is in the constructor, not the deploy script.",
+    "assets": [
+      {
+        "assetId": 1,
+        "symbol": "tNVDA",
+        "token": "0xB32011d2CB1D071a4c2897fE61Af443Cb88E3f73",
+        "feed": "0x9c2dC66Bd7484b67341ccdca7515775B04A62264",
+        "price": "$222.45"
+      },
+      {
+        "assetId": 2,
+        "symbol": "tAAPL",
+        "token": "0x3427e64d42f01C68bfC08e1419B640ECE3a68B76",
+        "feed": "0x1342192Db807F645Ea2Da56F63305643389BaB3b",
+        "price": "$335.38"
+      },
+      {
+        "assetId": 3,
+        "symbol": "tSPY",
+        "token": "0x9b1A569A57DAa9998E4d7Af82ce0AE0fE219D51a",
+        "feed": "0x599032FD4844FFdAf4F7eF3e65E2261D3AbED566",
+        "price": "$761.55"
+      },
+      {
+        "assetId": 4,
+        "symbol": "tUSDG",
+        "token": "0x3d62863D523027d8bC5A362Bd99186fa1eb39A14",
+        "feed": "0xFD8a6ca25B32285A89A8fF82831C7d5feC0bDB41",
+        "price": "$1.00",
+        "decimals": 6,
+        "role": "The venue's quote asset. Registered as STOCK because EligibleRegistry.usdg is an immutable set to the mainnet USDG address, which has no code on testnet, so the STABLE kind is unreachable here. Six decimals deliberately — USDG is six and the equities are eighteen, and converting between them is the quote leg's whole job. Never passed to commitWindow: the crossing proof refuses a window that prices the asset it also pays out in."
+      }
+    ]
+  },
+  "endToEnd": {
+    "status": "A real shielded deposit and a real zero-knowledge withdrawal settled on chain 46630.",
+    "proof": "test/fixtures/unshield.proof — the bytes barretenberg produced and verified natively.",
+    "depositRoot": "0x04dfb911529b795d17a1f74fdc6345251508901326a359c3a8fd00abd2f44c27",
+    "rootMatch": "The pool's tree root after one deposit equals the root the proof was built against, so CommitmentTree and arclite::merkle agree on the live chain.",
+    "nullifier": "0x24926ef182fe58fb14076a863a6ad752093417ab95eb1cf46cb015e0e6c17690",
+    "recipient": "0x000000000000000000000000000000000000aaaa",
+    "unitsPaid": 100,
+    "gasNote": "The first attempt reverted out of gas: forge's estimate of 3,309,183 fell under the ~3.62M the verifier sub-call needs. Re-run with --gas-estimate-multiplier 250. Verification alone is ~2.6M, so any relayer must budget well above a default estimate."
+  },
+  "parity": {
+    "pricesRoot": "Verified three ways on the live chain: PriceCommitter derives it in Solidity from its own staticcalls, src/lib/notes/prices.ts recomputes it in TypeScript from the stored entries, and circuits/lib/arclite/src/price.nr recomputes it in Noir from the witnessed table. All three agree.",
+    "script": "bun scripts/price-parity-live.mjs"
+  },
+  "poolRedeploy": {
+    "why": "v1 has no voidWindow. A window only closes by settling, and settling needs a proof; when that proof could not be produced the window stayed open forever and every later deposit queued instead of entering the tree.",
+    "observed": "v1 is wedged on-chain: openWindowId set, 3 pending deposits, 120 units held against 120 owed. Still solvent by the invariant, but 60 of those units back commitments that are in no root, so they can never be unshielded. Unreachable rather than stolen.",
+    "fix": "v2 adds voidWindow — guardian immediately, anyone after settlementDeadline (1h). It moves no tokens, marks no nullifiers and overwrites no root, which is why it is safe to make permissionless.",
+    "cost": "RwaDarkPool is immutable by design — no proxy, no delegatecall — so a fix is a new address, not an upgrade. script/DeployPool.s.sol redeploys only the pool and reuses the registry, the committer and the verifiers.",
+    "v3": "A spliced subtree's 32 leaves were never emitted, so the commitment set could not be rebuilt from chain data — meaning a note created by a settlement could never be spent, because its owner could not build a Merkle path to a leaf nobody published. LeafInserted covers single deposits only. v3 emits OutputsPublished carrying the whole subtree, its start index and the proven root. Not verified on-chain: a client checks the leaves against outputsSubtreeRoot for free, so nobody pays 31 hashes of gas per batch to re-prove what the circuit proved.",
+    "v4": "Adds the quoteAssetId immutable and supplies it to the verifier. RwaDarkPool is immutable by design, so this is a new address rather than an upgrade. Notes shielded into v3 stay in v3 and can still be unshielded there — unshield is always open and its verifier did not change — but they cannot be traded in v4."
+  },
+  "batchSettlement": {
+    "status": "A real batch crossing settled on chain 46630 through the deployed batch_cross verifier.",
+    "flow": "shield 3 notes -> seal the book -> commitWindow (the contract reads the feeds itself) -> read the committed table back -> match -> build the witness from it -> prove -> settleBatch",
+    "book": "two buyers (30, 10) and one seller (20); matched 20, split 15/5 pro-rata",
+    "proving": "0.76s, 9,152-byte proof, 26 public inputs",
+    "settlementGas": 5566226,
+    "result": "3 nullifiers marked spent, output subtree spliced, new root 0x1f2585fe01694a530b715ea5524463527fea5604b7b503f53cec27dee6e22675",
+    "script": "bun scripts/settle-live.mjs",
+    "pool": "v3 (0x12721fBdB261Eeb5e4227f0C4f5C68d27c6b5668)",
+    "outputsPublished": "OutputsPublished carries the 32-leaf subtree, its start index and the proven root, so the commitment set is reconstructible from chain data alone."
+  },
+  "tape": {
+    "note": "batch_cross's tape leaf used to chain the receipts root, which commits to per-order (nullifier, filled, quantity) — revealing the tape against it would have meant revealing the book. It now commits to per-asset matched volume and nothing else.",
+    "gas": "Chaining all 32 table rows cost 8.9M gas per publish; chaining only the live rows costs ~1.2M.",
+    "testnetParams": "tapeDelay 60s and kAnonymity 3. Production delay is 15 minutes; the delay is a policy dial, the safety comes from the commitment being fixed at proving time.",
+    "published": "asset 1: 20 units crossed",
+    "publishGas": 629099,
+    "refusedEdit": "A tape with an altered volume is refused by the deployed contract — verified live, not only in tests.",
+    "recovery": "voidWindow was exercised on the live chain to clear a window left open by an earlier failed run, which let deposits enter the tree again.",
+    "poolBinding": "TapeRegistry holds the pool in an immutable, so pool v4 needed a new one. The old registry still verifies v3's tape — which is the point of the binding: a tape registry that could be repointed could be made to attest to a different venue's volume."
+  },
+  "disclosure": {
+    "scoping": "Cryptographic, not a contract flag. A grant carries ivk_epoch = poseidon2(ivk, epoch) sealed to the auditor's X25519 key; that key reconstructs exactly one epoch and cannot walk back to the master ivk.",
+    "revocation": "Forward-only, and the contract says so via REVOCATION_IS_FORWARD_ONLY. Revoking withdraws a grant's standing; the auditor still holds the key and can still decrypt that epoch, forever, with no way for anyone to know whether they did.",
+    "accessLog": "An auditor's voluntary attestation that they used a grant. Decryption happens on their machine and leaves no trace, so an empty log is not evidence that nobody looked.",
+    "auditors": "None registered. Registering publishes an encryption key that disclosures get sealed to; a placeholder key nobody holds the secret for would be a trusted-looking recipient that can never read anything."
+  },
+  "spendAuthority": {
+    "note": "batch_cross verifies a Grumpkin Schnorr signature per spend, so knowing a note's owner preimage and nsecret no longer authorises moving it. The verifier was redeployed because the circuit changed; the pool was repointed by setVerifiers rather than redeployed.",
+    "residualFix": "The residual output was computed from the order quantity rather than the note's units, so a trader offering part of a note forfeited the rest — the note is spent whole. Fixed before any real deposit existed."
+  },
+  "quoteLeg": {
+    "why": "batch_cross took the spent note's asset from the price-table row for both sides, so a buyer spent a note of the asset it was buying and received the same asset back. Residual plus received equalled what went in: the buyer paid nothing, and the quote a seller received was minted from nowhere. Base units still conserved and outputs were owner-bound, so nothing could be stolen — but half the market did nothing.",
+    "fix": "A buyer funds the trade with a quote note and pays ceil(filled x ref / 10^30) where the seller is paid the floor. Per asset the two sides' fills are already forced equal, so across the window the buyers hand over at least what the sellers take away — the quote leg cannot mint. The note must cover the whole order, because the matcher picks `filled` after the order is signed.",
+    "verifier": "The circuit changed, so its verification key did. The old verifier rejects the new proofs with SumcheckFailed — which reads like a bad proof rather than a stale address. Redeployed and repointed via setVerifiers; the old one stays deployed.",
+    "gates": "110,964, down from 112,918. Still 2^17.",
+    "script": "forge script script/RedeployBatchVerifier.s.sol --rpc-url $RPC --broadcast",
+    "buysClosedOnTestnet": "RHC testnet has no USDG and EligibleRegistry.usdg is an immutable set to the mainnet address, so a buy cannot be funded at all. revealWindow refuses buys on a network with no quote asset, rather than letting one seal, match and then wedge the window at settlement.",
+    "quoteAssetIsAPublicInput": "The circuit hardcoded QUOTE_ASSET_ID = 0, but EligibleRegistry.assetIdOf returns 0 for *unregistered* and nextAssetId starts at 1 — so no registered asset can ever be 0, and a quote note would have carried an asset field the pool accounts nothing under, making it unwithdrawable. It cannot be witnessed either: a settler free to name the quote asset could name a traded one and pay sellers in it, inflating totalUnits for an asset the pool holds no more of. So the pool holds it in an immutable, checked against the registry at construction, and supplies it as public input 7. 27 public inputs now, not 26."
+  },
+  "unattendedSettlement": {
+    "status": "The venue sealed, priced, matched, proved and settled a crossing on chain with nobody driving it.",
+    "window": 151,
+    "tx": "0x13863858b2d568b0bbcddccfeb984c4297363a527aa626c4442da15c5e91a979",
+    "gas": 5528047,
+    "book": "two buyers (30 and 10 whole shares) against a 20-share sell; matched 20, split 15/5 pro-rata",
+    "quoteLeg": "buyers paid 4448945971 tUSDG, the seller received 4448945969 — two units of dust retained, one per buyer. Buyers pay the ceiling and sellers are paid the floor, so the quote leg cannot mint; the difference stays in the pool.",
+    "script": "BASE=https://arclite.tech bun scripts/venue-e2e.mjs — shields real notes, submits sealed orders over HTTP, then does nothing.",
+    "eightFixesItTook": [
+      "The compiled circuit was gitignored, so it never shipped to Vercel.",
+      "bb.js `wasmPath` is a file, not the directory holding it — passing the directory read a directory (EISDIR).",
+      "The SRS was fetched from an external CDN mid-settlement; it is bundled now.",
+      "Noir's `module` export is the web build, which loads WASM by fetching a `file:` URL — undici refuses that with 'not implemented... yet...', surfacing as a bare 'fetch failed'. A fetch shim handles the scheme.",
+      "bb.js spawned a worker that does not exist after bundling. The failure was an *uncaught exception*, so it killed the invocation and the tick recorded nothing at all — no error, no run. Proving is single-threaded now: 4.9s for 2^17.",
+      "`toNoirInputs` hand-lists every parameter and was missing three. A test now reads the circuit's own ABI so it cannot drift.",
+      "`keccak: true` is deprecated for `evm-no-zk`; the deployed verifier is the ZK `evm` target. 8128 bytes against the 9152 it expects.",
+      "The orders root was computed against `seq` rather than `chain_window_id`, so the settler could never reproduce what was sealed. Second time that confusion cost a day."
+    ],
+    "repeatable": "Three windows have now settled unattended on separate runs: 151 (0x13863858…), 173 (0xf21faac9…) and 175 (0x619a88f9…). The second and third were after the feed keeper moved into the tick and the prices started walking, so each crossed at a different committed reference — 175's quote leg retained 1 unit of dust where 151's retained 2, which is the ceil/floor rule following the numbers rather than a constant."
+  },
+  "withdrawal": {
+    "status": "A withdrawal settled on chain through the browser's own code path.",
+    "tx": "0xfe3b8c34313421781bad159b3bf3d2c62a65e2d7e88370110b43f36f1e6734b8",
+    "gas": 5268368,
+    "flow": "derive a vault -> shield 4 units -> read the tree -> build the witness -> prove -> unshield 3 units",
+    "checked": "recipient paid exactly, pool's obligation fell by the same amount, nullifier spent, pool still solvent, change note in the tree at leaf 227 and findable from its counter alone",
+    "gasTrap": "5,000,000 was not enough and failed with gasUsed exactly at the cap, while `cast run` replayed the same transaction successfully — a replay uses a generous limit. That gap is the 63/64 rule: the verifier sub-call takes 63/64 of what remains, runs out, and the outer frame still has enough to revert, so it reads as a logic failure. The limit is 8M now, in the dashboard and in the script.",
+    "browserProver": "Verified separately on the live site: 10.8s, 7616 bytes, 8 public inputs — the same shape this script asserts, and the shape the deployed UnshieldVerifier accepts.",
+    "script": "bun scripts/withdraw-e2e.mjs"
+  },
+  "dashboardVerified": {
+    "status": "Every wallet-gated path on the dashboard run end to end with a real MetaMask on testnet.",
+    "wallet": "0xbbb60c1b72d098b883f926823267067e246795a6",
+    "covered": [
+      "connect (MetaMask only, EIP-6963)",
+      "SIWE sign-in — session issued for the address",
+      "open vault — keys derived in the worker from a signature",
+      "notes from the retired v3 pool found and listed as such",
+      "faucet at both decimal scales — tNVDA 18dp and tUSDG 6dp",
+      "deposit of a traded asset and of the quote asset",
+      "sealed order, sell (window 185) and buy (window 186)",
+      "the venue sealing, pricing, matching, proving and settling both unattended",
+      "withdrawal proved in the browser in 14.8s, paying out of the retired pool"
+    ],
+    "windows": {
+      "185": {
+        "side": "sell",
+        "tx": "0xc4a46ef1e879e2d90f6db94ab5e364ed9bb75747deb45251c70d2937a05873f5",
+        "gas": 5441812,
+        "reason": "unmatched"
+      },
+      "186": {
+        "side": "buy",
+        "tx": "0x01fb0b0ef64306c2929fa594f65cdb4cd4ab4178d19b1655fe256b797cfd6fa4",
+        "gas": 5434307,
+        "reason": "unmatched"
+      }
+    },
+    "unmatchedIsCorrect": "Neither window had a counterparty, so nothing crossed and both notes rest intact. That exercises everything except the crossing itself, which venue-e2e has settled three times with quote-funded buys on both sides.",
+    "stillUntested": [
+      "The network-switch prompt — the wallet was already on 46630.",
+      "A real fill from the dashboard — needs two browsers in one window; the crossing is covered by venue-e2e."
+    ]
+  }
+}

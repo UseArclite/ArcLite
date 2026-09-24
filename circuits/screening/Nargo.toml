@@ -1,0 +1,10 @@
+[package]
+name = "screening"
+type = "bin"
+authors = ["ArcLite"]
+
+[dependencies]
+poseidon = { tag = "v0.3.0", git = "https://github.com/noir-lang/poseidon" }
+arclite = { path = "../lib/arclite" }
+# schnorr left the Noir stdlib; pin it like poseidon rather than assuming std has it.
+schnorr = { tag = "v0.4.0", git = "https://github.com/noir-lang/schnorr" }

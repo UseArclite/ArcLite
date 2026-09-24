@@ -1,0 +1,9 @@
+[package]
+name = "batch_cross"
+type = "bin"
+authors = ["ArcLite"]
+
+[dependencies]
+poseidon = { tag = "v0.3.0", git = "https://github.com/noir-lang/poseidon" }
+schnorr = { tag = "v0.4.0", git = "https://github.com/noir-lang/schnorr" }
+arclite = { path = "../lib/arclite" }

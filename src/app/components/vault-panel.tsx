@@ -1,0 +1,444 @@
+"use client";
+import { useEffect, useState } from "react";
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  KeyRound,
+  Loader2,
+  LockKeyhole,
+  ShieldCheck,
+  Unlock,
+} from "lucide-react";
+import { useAccount, useWriteContract } from "wagmi";
+import { erc20Abi, useVault, type VaultNote } from "./vault-provider";
+import { Holdings } from "./holdings";
+import { TransactionTrail } from "./transaction-trail";
+import { feature } from "../lib/features";
+import { useT } from "../lib/i18n";
+
+/**
+ * The shielded vault on the Portfolio tab.
+ *
+ * The holdings table beside this one is simulated and says so. This panel is the real thing:
+ * keys derived in a worker from a signature, notes located in the on-chain commitment set, and
+ * a balance in raw units that no server computed. Today it finds nothing, because the pool is
+ * not deployed — and it says exactly that rather than rendering an empty table that reads as a
+ * loading state or, worse, as a real zero.
+ */
+export function VaultPanel() {
+  const t = useT();
+  const { isConnected } = useAccount();
+  const vault = useVault();
+
+  return (
+    <section className="vault-panel">
+      <div className="panel-top">
+        <div>
+          <span className="eyebrow">{t("SHIELDED VAULT · LIVE")}</span>
+          <h2>{t("Your private balance")}</h2>
+        </div>
+        {vault.status === "unlocked" ? <Unlock size={19} /> : <LockKeyhole size={19} />}
+      </div>
+
+      {vault.status !== "unlocked" ? (
+        <>
+          <p className="vault-copy">
+            {t(
+              "Your shielded balance is computed in your browser, from keys derived from a signature. Nothing here is sent to a server: the vault reads the public commitment set and works out which notes are yours locally, so no one — us included — learns which leaves you asked about.",
+            )}
+          </p>
+          <button
+            className="seal-order-button"
+            onClick={() => void vault.unlock()}
+            disabled={!isConnected || vault.status === "unlocking"}
+          >
+            <KeyRound size={16} />
+            {vault.status === "unlocking"
+              ? "Check MetaMask…"
+              : isConnected
+                ? "Open private vault"
+                : "Connect MetaMask to open"}
+          </button>
+          <p className="ticket-note">
+            {t("Signing derives your viewing keys. It approves no transaction and moves no funds.")}
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="vault-stats">
+            <div>
+              <span>{t("Vault")}</span>
+              <strong
+                title={t(
+                  "A hash of your viewing key — it identifies the vault without being able to read it.",
+                )}
+              >
+                {vault.fingerprint}
+              </strong>
+            </div>
+            <div>
+              <span>{t("Your notes")}</span>
+              <strong>
+                {vault.scanning ? <Loader2 size={15} className="spin" /> : vault.noteCount}
+              </strong>
+            </div>
+            <div>
+              <span>{t("Anonymity set")}</span>
+              <strong>{vault.leafCount.toLocaleString("en-US")}</strong>
+            </div>
+          </div>
+
+          {/* An empty vault and an unreadable one look identical, and only one of them is good
+              news. Said before the balances rather than after, because it changes what the
+              numbers below mean. */}
+          {vault.spentUnknown && (
+            <div className="guard-result deferred" role="status">
+              <ShieldCheck size={16} />
+              <span>
+                {t(
+                  "Robinhood Chain could not be reached to check which notes are already spent, so none are shown. Your notes are safe and nothing has been lost — this retries on its own every few seconds.",
+                )}
+              </span>
+            </div>
+          )}
+
+          {feature("positions") && vault.balances.length > 0 ? (
+            <Holdings />
+          ) : vault.balances.length > 0 ? (
+            <ul className="vault-balances">
+              {vault.balances.map((b) => (
+                <li key={b.assetId}>
+                  <span>Asset {b.assetId}</span>
+                  <b>{b.units}</b>
+                  {/* Raw units, and the leaf each note sits at — the position its nullifier and
+                      its spend signature are both bound to. */}
+                  <small>
+                    raw units ·{" "}
+                    {vault.notes
+                      .filter((n) => n.assetId === b.assetId && !n.spent)
+                      .map((n) => `leaf ${n.leafIndex}`)
+                      .join(", ")}
+                  </small>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="guard-result" role="status">
+              <ShieldCheck size={16} />
+              <span>
+                {vault.deployed
+                  ? "No shielded notes found for this vault. Shield a deposit to create your first note."
+                  : "The pool is not deployed on this network yet, so there are no notes to find. Your keys are derived and the scan runs end to end — it returns nothing because nothing exists yet."}
+              </span>
+            </div>
+          )}
+
+          <Deposit />
+          <Withdraw />
+
+          {feature("tx-receipts") && <TransactionTrail />}
+
+          <Recover />
+
+          <button className="reset-demo" onClick={vault.lock}>
+            <LockKeyhole size={14} /> {t("Lock vault")}
+          </button>
+        </>
+      )}
+
+      {vault.error && (
+        <p role="alert" className="ticket-error">
+          {vault.error}
+        </p>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Minting test tokens and shielding them.
+ *
+ * Both are testnet-only affordances and say so. The faucet exists because `TestnetStockToken`
+ * has an open `mint` — there is no real issuer to ask — and it refuses to deploy on mainnet, so
+ * this control cannot follow it there.
+ *
+ * Depositing is two transactions the trader signs: an approval, then `shield`. What reaches the
+ * chain is a commitment, so the pool learns the amount and the asset and nothing else.
+ */
+/**
+ * Withdrawing, proved in this browser.
+ *
+ * The proof takes a few seconds and happens in the vault worker, where the secrets already are.
+ * That is the point rather than an implementation detail: `RwaDarkPool.unshield` has no pause,
+ * no role and no window check, so a holder who can produce this proof can leave whatever the
+ * venue is doing — and a server that could prove it for them could also spend their note.
+ *
+ * Notes stranded in a retired pool appear here too. `RwaDarkPool` is immutable, so every fix is
+ * a new address; the old pool still honours withdrawals, but nothing would show those notes
+ * again unless the vault deliberately looked. A balance that silently vanished is the worst
+ * version of that.
+ */
+function Withdraw() {
+  const t = useT();
+  const vault = useVault();
+  const { address } = useAccount();
+  // Spent notes are not withdrawable, and the tree gives no hint of it — a commitment stays in
+  // it forever, so a note consumed by a settlement scans exactly like a live one. Offering it
+  // produced a transaction that reverted with `NullifierAlreadySpent` and cost the holder gas
+  // to learn what the pool could simply have been asked.
+  const withdrawable: { note: VaultNote; pool?: `0x${string}`; label: string }[] = [
+    ...vault.notes.filter((n) => !n.spent).map((n) => ({ note: n, pool: undefined, label: "" })),
+    ...vault.legacyNotes
+      .filter((n) => !n.spent)
+      .map((n) => ({
+        note: n,
+        pool: n.pool,
+        label: ` · retired pool ${n.pool.slice(0, 8)}…`,
+      })),
+  ];
+
+  const [selected, setSelected] = useState(0);
+  const [units, setUnits] = useState("");
+  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const chosen = withdrawable[selected];
+  // Default to the whole note: a full withdrawal publishes no change note, which is both the
+  // cheapest and the least surprising outcome.
+  const amount = units || chosen?.note.units || "";
+
+  async function send() {
+    if (!chosen || !address) return;
+    setMessage({ text: "Proving in your browser — this takes a few seconds…", ok: true });
+    const result = await vault.withdraw({
+      note: chosen.note,
+      units: amount,
+      recipient: address,
+      pool: chosen.pool,
+    });
+    setMessage({
+      text: result.ok
+        ? `Withdrawn. Proved in ${((result.provingMs ?? 0) / 1000).toFixed(1)}s, settled on chain.`
+        : (result.reason ?? "The withdrawal failed."),
+      ok: result.ok,
+    });
+    if (result.ok) setUnits("");
+  }
+
+  if (withdrawable.length === 0) return null;
+
+  return (
+    <div className="vault-deposit">
+      <span className="eyebrow">{t("WITHDRAW")}</span>
+      <div className="sealed-order-fields">
+        <label>
+          <span>{t("Note")}</span>
+          <select value={selected} onChange={(e) => setSelected(Number(e.target.value))}>
+            {withdrawable.map((w, i) => (
+              <option key={`${w.pool ?? "current"}-${w.note.leafIndex}`} value={i}>
+                asset {w.note.assetId} · {w.note.units} units · leaf {w.note.leafIndex}
+                {w.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>{t("Raw units")}</span>
+          <input
+            value={amount}
+            inputMode="numeric"
+            onChange={(e) => setUnits(e.target.value.replace(/\D/g, ""))}
+          />
+        </label>
+      </div>
+      <div className="vault-deposit-actions">
+        <button
+          className="seal-order-button"
+          onClick={() => void send()}
+          disabled={vault.withdrawing || !amount || !address}
+        >
+          <ArrowUpFromLine size={16} />
+          {vault.withdrawing ? "Proving…" : "Withdraw to my wallet"}
+        </button>
+      </div>
+      <p className="ticket-note">
+        The proof is generated here, in your browser, from keys that never leave it. Withdrawal
+        needs no operator: the pool accepts a valid proof from anyone, with no pause, no role and no
+        window check.
+        {vault.legacyNotes.length > 0 &&
+          " Notes marked as a retired pool predate a redeploy — still yours, still withdrawable, but not tradable."}
+      </p>
+      {message && (
+        <p role="status" className={message.ok ? "ticket-note" : "ticket-error"}>
+          {message.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** One whole token in raw units, from the asset's own decimals. */
+const wholeUnit = (decimals: number) => (10n ** BigInt(decimals)).toString();
+
+function Deposit() {
+  const t = useT();
+  const vault = useVault();
+  const { address } = useAccount();
+  const { writeContractAsync } = useWriteContract();
+  const [assetId, setAssetId] = useState("");
+  // Raw units, so the right number depends on the asset's decimals — eighteen for the equities,
+  // six for the quote. Reading them from the registry rather than a table means a newly listed
+  // asset gets the right default without anyone remembering to add it.
+  const [units, setUnits] = useState("");
+  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
+  const [minting, setMinting] = useState(false);
+
+  const assets = vault.poolAssets;
+  const decimalsOf = (id: string) => assets.find((a) => String(a.assetId) === id)?.decimals ?? 18;
+
+  // Pick the first asset as soon as the registry answers, so the form is never submittable
+  // against an empty selection.
+  useEffect(() => {
+    if (assetId === "" && assets.length > 0) {
+      const first = String(assets[0]!.assetId);
+      setAssetId(first);
+      setUnits(wholeUnit(assets[0]!.decimals));
+    }
+  }, [assets, assetId]);
+
+  // Keep the amount meaningful when the asset changes rather than carrying eighteen decimals'
+  // worth of units over to a six-decimal token, where it is a million times the supply.
+  function chooseAsset(next: string) {
+    if (units === wholeUnit(decimalsOf(assetId))) setUnits(wholeUnit(decimalsOf(next)));
+    setAssetId(next);
+  }
+
+  async function faucet() {
+    if (!address) return;
+    setMinting(true);
+    setMessage(null);
+    try {
+      const token = vault.poolAssets.find((a) => String(a.assetId) === assetId)?.token;
+      if (!token) throw new Error(`asset ${assetId} is not registered in this pool`);
+      await writeContractAsync({
+        address: token,
+        abi: erc20Abi,
+        functionName: "mint",
+        args: [address, BigInt(units || "0")],
+      });
+      setMessage({ text: "Test tokens minted. Deposit them to create a note.", ok: true });
+    } catch (e) {
+      setMessage({ text: (e as Error).message, ok: false });
+    } finally {
+      setMinting(false);
+    }
+  }
+
+  async function deposit() {
+    setMessage(null);
+    const result = await vault.shield(assetId, units);
+    setMessage({
+      text: result.ok
+        ? "Deposited. Your note is in the pool and only this vault can spend it."
+        : (result.reason ?? "The deposit failed."),
+      ok: result.ok,
+    });
+  }
+
+  return (
+    <div className="vault-deposit">
+      <span className="eyebrow">{t("DEPOSIT")}</span>
+      <div className="sealed-order-fields">
+        <label>
+          <span>{t("Asset")}</span>
+          <select value={assetId} onChange={(e) => chooseAsset(e.target.value)}>
+            {assets.map((a) => (
+              <option key={a.assetId} value={String(a.assetId)}>
+                {a.assetId} — {a.symbol}
+                {a.isQuote ? " (quote)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>{t("Raw units")}</span>
+          <input
+            value={units}
+            inputMode="numeric"
+            onChange={(e) => setUnits(e.target.value.replace(/\D/g, ""))}
+          />
+        </label>
+      </div>
+      <div className="vault-deposit-actions">
+        {/* Testnet only. The stand-in tokens have an open `mint` because there is no issuer to
+            ask; the real ones have one, and a button that cannot work is worse than no button. */}
+        {vault.faucetAvailable && (
+          <button className="reset-demo" onClick={() => void faucet()} disabled={minting || !units}>
+            {minting ? "Minting…" : "Get test tokens"}
+          </button>
+        )}
+        <button
+          className="seal-order-button"
+          onClick={() => void deposit()}
+          disabled={vault.shielding || !units}
+        >
+          <ArrowDownToLine size={16} />
+          {vault.shielding ? "Depositing…" : "Deposit into the pool"}
+        </button>
+      </div>
+      {message && (
+        <p role="status" className={message.ok ? "ticket-note" : "ticket-error"}>
+          {message.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Rebuild the vault's records from the chain.
+ *
+ * Finding a note means regenerating it from (epoch, counter, assetId, units). The signature
+ * gives the first two; the last two live only in this browser's records — so a new browser, or
+ * one whose storage was cleared, scans the tree and honestly reports nothing while the money
+ * sits in it. The notes were never lost. The coordinates were.
+ *
+ * The chain holds the missing half, because `shield` is a public transfer and `Shielded` names
+ * the asset and the amount. This reads those back and searches for the counter.
+ *
+ * Offered rather than run automatically: it costs a wallet-scoped log scan, and a vault that
+ * already has its records does not need it. Somebody who does need it will have arrived here
+ * looking at a balance of zero.
+ */
+function Recover() {
+  const t = useT();
+  const vault = useVault();
+  const [busy, setBusy] = useState(false);
+  const [said, setSaid] = useState<string | null>(null);
+
+  async function run() {
+    setBusy(true);
+    setSaid(null);
+    const result = await vault.recover();
+    setSaid(
+      result.ok
+        ? result.found
+          ? `Recovered ${result.found} deposit${result.found === 1 ? "" : "s"} from the chain.`
+          : "Nothing to recover — this vault's records are already complete."
+        : (result.reason ?? "Could not read the chain."),
+    );
+    setBusy(false);
+  }
+
+  return (
+    <div className="vault-recover">
+      <button className="reset-demo" onClick={() => void run()} disabled={busy}>
+        {busy ? "Reading the chain…" : "Recover notes from chain"}
+      </button>
+      <p className="ticket-note">
+        {said ??
+          "Balance empty on a new browser? Your notes are found from records kept here, and the " +
+            "chain holds what is needed to rebuild them."}
+      </p>
+    </div>
+  );
+}

@@ -1,0 +1,2 @@
+[workspace]
+members = ["sizing", "vectors", "tree", "unshield", "screening", "fixture", "batch_cross", "sigcost"]
