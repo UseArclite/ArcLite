@@ -311,6 +311,17 @@ export interface WindowView {
   /** When the book actually froze, and when the window finished. Null until each happens. */
   sealedAt: string | null;
   settledAt: string | null;
+  /**
+   * Whether anyone has been here lately, beyond this one window.
+   *
+   * Optional because a response cached across a rolling deploy will not carry it, and a panel
+   * that threw on a missing field would take the window clock down with it.
+   */
+  recent?: {
+    orders24h: number;
+    windows24h: number;
+    lastOrderAt: string | null;
+  };
   previous: {
     seq: number;
     status: WindowStatus;

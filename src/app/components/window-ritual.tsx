@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useWindow, type WindowStatus } from "./market-provider";
 import { useSound } from "./immersion";
 import { feature } from "../lib/features";
+import { venuePulse } from "../lib/venue-pulse";
 import { useT } from "../lib/i18n";
 
 /**
@@ -148,6 +149,15 @@ export function WindowRitual() {
   const elapsed = Math.min(total, Math.max(0, total - secondsToSeal));
   const pct = open ? (elapsed / total) * 100 : 100;
 
+  // `recent` is optional on the wire: a response cached across a rolling deploy will not carry
+  // it, and the honest fallback is the plain count rather than an invented history.
+  const heartbeat = venuePulse({
+    orderCount: live.orderCount,
+    orders24h: live.recent?.orders24h ?? live.orderCount,
+    windows24h: live.recent?.windows24h ?? 0,
+    lastOrderAt: live.recent?.lastOrderAt ?? null,
+  });
+
   const prev = live.previous;
 
   return (
@@ -196,14 +206,40 @@ export function WindowRitual() {
               : t("The book's time is up. The venue seals it on its next pass, within a minute.")
             : t(STAGES[phase]?.caption ?? "")}
         </p>
-        <p className={"ritual-count" + (pulse ? " is-pulsing" : "")}>
-          <b>{live.orderCount}</b>{" "}
-          {live.orderCount === 1 ? t("order in this window") : t("orders in this window")}
-          {live.fillCount > 0 ? ` · ${live.fillCount} filled` : ""}
-          {live.deferredSymbols.length > 0
-            ? ` · ${live.deferredSymbols.length} asset${live.deferredSymbols.length === 1 ? "" : "s"} deferred`
-            : ""}
-        </p>
+        {feature("order-pulse") ? (
+          // The count with a denominator. A bare zero read the same whether the venue was quiet,
+          // empty, broken or brand new, and those are four different decisions.
+          <p
+            className={
+              "ritual-count" +
+              (pulse ? " is-pulsing" : "") +
+              (heartbeat.neverAnyOrders ? " is-cold" : "")
+            }
+          >
+            {/* The count and its label are one line; each piece of context is its own. Without
+                this wrapper the column layout stacks the number above its own noun. */}
+            <span className="ritual-count-line">
+              <b>{live.orderCount}</b> {t(heartbeat.label)}
+            </span>
+            {heartbeat.context ? <small>{heartbeat.context}</small> : null}
+            {live.fillCount > 0 ? <small>{live.fillCount} filled</small> : null}
+            {live.deferredSymbols.length > 0 ? (
+              <small>
+                {live.deferredSymbols.length} asset
+                {live.deferredSymbols.length === 1 ? "" : "s"} deferred
+              </small>
+            ) : null}
+          </p>
+        ) : (
+          <p className={"ritual-count" + (pulse ? " is-pulsing" : "")}>
+            <b>{live.orderCount}</b>{" "}
+            {live.orderCount === 1 ? t("order in this window") : t("orders in this window")}
+            {live.fillCount > 0 ? ` · ${live.fillCount} filled` : ""}
+            {live.deferredSymbols.length > 0
+              ? ` · ${live.deferredSymbols.length} asset${live.deferredSymbols.length === 1 ? "" : "s"} deferred`
+              : ""}
+          </p>
+        )}
       </div>
 
       {prev && (

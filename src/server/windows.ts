@@ -54,6 +54,22 @@ export interface WindowView {
   deferredSymbols: string[];
   sealedAt: string | null;
   settledAt: string | null;
+  /**
+   * Whether anyone has been here lately.
+   *
+   * `orderCount` alone describes one window, and on a venue this young that number is almost
+   * always zero — which reads identically to a venue that is broken, or empty, or was never
+   * live at all. These say which. Cheap: `order_count` is a column on `arclite.windows`, so it
+   * is an aggregate over rows the same query already touches.
+   */
+  recent: {
+    /** Orders across every window opened in the last 24 hours. */
+    orders24h: number;
+    /** How many windows that covers, so the number has a denominator. */
+    windows24h: number;
+    /** When the most recent window that carried any order sealed. Unbounded lookback. */
+    lastOrderAt: string | null;
+  };
   previous: {
     seq: number;
     status: WindowStatus;
@@ -94,6 +110,9 @@ export async function currentWindow(chainId: SupportedChainId): Promise<WindowVi
       prev_status: WindowStatus | null;
       prev_settled_at: Date | null;
       prev_fill_count: number | null;
+      orders_24h: number | null;
+      windows_24h: number | null;
+      last_order_at: Date | null;
     }[]
   >`
     with live as (
@@ -107,14 +126,34 @@ export async function currentWindow(chainId: SupportedChainId): Promise<WindowVi
        where chain_id = ${chainId}
          and status in ('SETTLED','VOID','FAILED')
        order by seq desc limit 1
+    ),
+    -- The last day of windows, as one row. Bounded by time rather than by count so the answer
+    -- does not change meaning when the window length is retuned.
+    day as (
+      select coalesce(sum(order_count), 0)::int as orders_24h,
+             count(*)::int as windows_24h
+        from arclite.windows
+       where chain_id = ${chainId}
+         and opens_at > now() - interval '24 hours'
+    ),
+    -- Deliberately not bounded to the day: "the last order was three weeks ago" is a true and
+    -- useful thing to be able to say, and it is the sentence a quiet venue needs.
+    last_order as (
+      select max(opens_at) as at
+        from arclite.windows
+       where chain_id = ${chainId}
+         and order_count > 0
     )
     select l.seq, e.seq as epoch_seq, l.status, l.opens_at, l.seals_at, now() as server_now,
            l.order_count, l.fill_count, l.deferred_symbols, l.sealed_at, l.settled_at,
            p.seq as prev_seq, p.status as prev_status,
-           p.settled_at as prev_settled_at, p.fill_count as prev_fill_count
+           p.settled_at as prev_settled_at, p.fill_count as prev_fill_count,
+           d.orders_24h, d.windows_24h, lo.at as last_order_at
       from live l
       join arclite.epochs e on e.id = l.epoch_id
       left join prev p on true
+      left join day d on true
+      left join last_order lo on true
   `;
 
   const r = rows[0];
@@ -135,6 +174,11 @@ export async function currentWindow(chainId: SupportedChainId): Promise<WindowVi
     deferredSymbols: r.deferred_symbols ?? [],
     sealedAt: r.sealed_at?.toISOString() ?? null,
     settledAt: r.settled_at?.toISOString() ?? null,
+    recent: {
+      orders24h: r.orders_24h ?? 0,
+      windows24h: r.windows_24h ?? 0,
+      lastOrderAt: r.last_order_at?.toISOString() ?? null,
+    },
     previous: r.prev_seq
       ? {
           seq: Number(r.prev_seq),

@@ -696,3 +696,56 @@
   font: 11px/1.6 var(--mono);
   color: var(--t-dim);
 }
+
+/* ── The venue's heartbeat ───────────────────────────────────────────────
+ * `@keyframes ritual-pulse` animates from `#0079be` to `#080842` — a blue authored for the light
+ * dashboard that ends on near-black. Under this skin it flashed the count *darker than the
+ * panel*, so the one animation whose whole job is to catch the eye became invisible. A skin that
+ * inverts the ground has to re-author every keyframe that names a colour, not only the rules. */
+
+@keyframes ritual-pulse-terminal {
+  0% {
+    color: #ffffff;
+  }
+  60% {
+    color: var(--t-accent);
+  }
+  100% {
+    color: var(--t-text);
+  }
+}
+.dashboard[data-skin="terminal"] .ritual-count.is-pulsing b {
+  animation: ritual-pulse-terminal 0.9s ease-out;
+}
+
+/* The count line becomes a stack: the window's number, then what it means. */
+.dashboard[data-skin="terminal"] .ritual-count {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  text-align: right;
+}
+.dashboard[data-skin="terminal"] .ritual-count small {
+  font: 10px/1.4 var(--mono);
+  color: var(--t-dim);
+  letter-spacing: 0.02em;
+}
+/* Nothing has ever been submitted here. Stated, not dressed up — and not alarming either, since
+ * an empty venue is a fact about its age rather than a fault. */
+.dashboard[data-skin="terminal"] .ritual-count.is-cold b {
+  color: var(--t-dim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard[data-skin="terminal"] .ritual-count.is-pulsing b {
+    animation: none;
+  }
+}
+.dashboard[data-skin="terminal"] .ritual-count-line {
+  white-space: nowrap;
+}
+.dashboard[data-skin="terminal"] .ritual-count-line b {
+  font-size: 15px;
+  margin-right: 3px;
+}

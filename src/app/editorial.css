@@ -196,6 +196,10 @@ html{scroll-padding-top:95px}
 .ritual-now{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
 .ritual-caption{margin:0;flex:1 1 320px;font:12px/1.65 var(--sans);color:#3d3a5e}
 .ritual-count{margin:0;flex:0 0 auto;font:11px/1.6 var(--sans);color:#4d496a;font-variant-numeric:tabular-nums}
+.ritual-count{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}
+.ritual-count-line{white-space:nowrap}
+.ritual-count small{font:10px/1.4 var(--sans);color:#6a6789}
+.ritual-count.is-cold b{color:#6a6789}
 .ritual-count b{font-size:15px;color:#080842}
 .ritual-count.is-pulsing b{animation:ritual-pulse .9s ease-out}
 @keyframes ritual-pulse{0%{color:#0079be}60%{color:#0079be}100%{color:#080842}}

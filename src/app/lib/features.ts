@@ -51,7 +51,9 @@ export type Feature =
   /** #27 — How linkable a withdrawal would be to the deposit that funded it. */
   | "withdraw-timing"
   /** #36 — The dashboard as a terminal: dense, monospace, explanation folded away. */
-  | "terminal";
+  | "terminal"
+  /** #22 — The venue's heartbeat: is anyone else here, and when were they last. */
+  | "order-pulse";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be
