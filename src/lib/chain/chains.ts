@@ -116,9 +116,15 @@ export const ARCLITE = {
      * table rather than an address is what decides which verifier is current.
      */
     batchVerifier: "0xe829a754DabD82738197D725a943AcDc148AEd88",
-    /** Not deployed on mainnet yet — the tape and disclosure lanes are Phase 5. */
+    /** The tape lane is still Phase 5; disclosure is live. */
     tapeRegistry: null,
-    disclosureRegistry: null,
+    /**
+     * Deployed 2026-09-24, governance held by the deployer. No auditor is registered, and
+     * `grant` reverts with `UnknownAuditor` until one is — deliberately, because registering a
+     * placeholder would publish an encryption key nobody holds the secret for and create a
+     * trusted-looking recipient that can never read anything.
+     */
+    disclosureRegistry: "0x44BaEB55De570E4E3AeAEf5397fF328419D942Eb",
     /**
      * The **pool's** block, not the registry's. The tree belongs to the pool, so scanning from
      * before it existed only reads leaves of a pool whose notes these are not. Raised with each

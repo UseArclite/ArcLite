@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
-import { Copy, Eye, ShieldCheck } from "lucide-react";
-import { clientDeployment } from "@/lib/chain/chains";
+import { useQuery } from "@tanstack/react-query";
+import { useWriteContract } from "wagmi";
+import { Copy, ExternalLink, Eye, FileSignature, ShieldCheck } from "lucide-react";
+import { CHAINS, clientChainId, clientDeployment, readClient } from "@/lib/chain/chains";
 import { useVault } from "./vault-provider";
 import { useWindow } from "./market-provider";
 import { useT } from "../lib/i18n";
@@ -19,45 +21,143 @@ import { useT } from "../lib/i18n";
  * flip later — which is the whole difference between a disclosure boundary and a promise to
  * respect one.
  *
- * ## Why this does not write to the chain here
+ * ## Two halves that fail independently
  *
- * `DisclosureRegistry` is deployed on testnet and not on mainnet, and its `grant` requires the
- * auditor to have been registered by governance first. Neither is true on the network this
- * dashboard talks to, and no auditor exists to register.
+ * Sealing is client-side and needs nothing deployed. The registry is the public, revocable,
+ * timestamped record that a grant happened, and `grant` reverts with `UnknownAuditor` until
+ * governance has registered the recipient — which on a venue with no auditors is every time.
  *
- * Sealing does not need any of that. The box is produced in the vault worker and handed over
- * however the two parties already communicate; the registry adds a public, revocable, timestamped
- * record of a grant that has happened. So the sealing works now and the panel says plainly which
- * half is missing, rather than offering a button that would revert.
+ * So the panel treats them separately. The box is always produced and always usable; the on-chain
+ * record is offered only when the chain would actually accept it, because a button that reverts
+ * teaches people that the feature is broken rather than that the step is missing.
  */
+
+const registryAbi = [
+  {
+    type: "function",
+    name: "grant",
+    stateMutability: "nonpayable",
+    inputs: [{ type: "address" }, { type: "uint64" }, { type: "bytes" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "auditorList",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address[]" }],
+  },
+  {
+    // Field order matches the struct, which is not the order you would guess from the docs.
+    type: "function",
+    name: "auditors",
+    stateMutability: "view",
+    inputs: [{ type: "address" }],
+    outputs: [
+      { name: "encryptionKey", type: "bytes32" },
+      { name: "name", type: "string" },
+      { name: "active", type: "bool" },
+      { name: "registeredAt", type: "uint64" },
+    ],
+  },
+] as const;
+
+interface Auditor {
+  address: `0x${string}`;
+  name: string;
+  encryptionKey: `0x${string}`;
+  active: boolean;
+}
+
 export function DisclosurePanel() {
   const t = useT();
   const vault = useVault();
   const { window: live } = useWindow();
+  const { writeContractAsync } = useWriteContract();
 
   const [auditorKey, setAuditorKey] = useState("");
+  const [chosenAuditor, setChosenAuditor] = useState("");
   const [epoch, setEpoch] = useState("");
   const [sealed, setSealed] = useState<{ epoch: number; hex: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [recorded, setRecorded] = useState<string | null>(null);
 
-  const registry = clientDeployment().disclosureRegistry;
+  const registry = clientDeployment().disclosureRegistry as `0x${string}` | null;
+  const explorer = CHAINS[clientChainId()].blockExplorers.default.url;
   const currentEpoch = live?.epochSeq ?? null;
   const chosen = epoch === "" ? currentEpoch : Number(epoch);
+
+  // Who the registry will accept a grant for. Read with `readClient` rather than the wallet's,
+  // for the same reason the spent-note check is: this is public state and should not depend on a
+  // connection lifecycle.
+  const { data: auditors } = useQuery({
+    queryKey: ["disclosure-auditors", registry, clientChainId()],
+    enabled: Boolean(registry),
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<Auditor[]> => {
+      const client = readClient();
+      const list = (await client.readContract({
+        address: registry!,
+        abi: registryAbi,
+        functionName: "auditorList",
+      })) as readonly `0x${string}`[];
+      const out: Auditor[] = [];
+      for (const address of list) {
+        const a = (await client.readContract({
+          address: registry!,
+          abi: registryAbi,
+          functionName: "auditors",
+          args: [address],
+        })) as readonly [`0x${string}`, string, boolean, bigint];
+        out.push({ address, encryptionKey: a[0], name: a[1], active: a[2] });
+      }
+      return out.filter((a) => a.active);
+    },
+  });
+
+  const registered = auditors ?? [];
+  const picked = registered.find((a) => a.address === chosenAuditor);
+  // A registered auditor's key comes from the registry rather than from the field: it is the key
+  // the contract itself published, so sealing to anything else would produce a box the recorded
+  // grant does not match.
+  const keyToUse = picked ? picked.encryptionKey : auditorKey.trim();
 
   async function seal() {
     setError(null);
     setSealed(null);
+    setRecorded(null);
     if (chosen == null || !Number.isFinite(chosen) || chosen < 0) {
       setError("Choose which epoch to disclose.");
       return;
     }
-    const result = await vault.sealDisclosure(chosen, auditorKey.trim());
+    const result = await vault.sealDisclosure(chosen, keyToUse);
     if (!result.ok || !result.sealed) {
       setError(result.reason ?? "The vault could not seal that.");
       return;
     }
     setSealed({ epoch: chosen, hex: result.sealed });
+  }
+
+  async function record() {
+    if (!sealed || !picked || !registry) return;
+    setRecording(true);
+    setError(null);
+    try {
+      const hash = await writeContractAsync({
+        address: registry,
+        abi: registryAbi,
+        functionName: "grant",
+        args: [picked.address, BigInt(sealed.epoch), sealed.hex as `0x${string}`],
+      });
+      setRecorded(hash);
+    } catch (e) {
+      const message = (e as Error).message ?? "The grant failed.";
+      setError(/user rejected|denied/i.test(message) ? "Transaction declined." : message);
+    } finally {
+      setRecording(false);
+    }
   }
 
   async function copy() {
@@ -92,16 +192,31 @@ export function DisclosurePanel() {
       </p>
 
       <div className="sealed-order-fields">
-        <label>
-          <span>{t("Auditor's public key")}</span>
-          <input
-            value={auditorKey}
-            placeholder="0x… (32 bytes)"
-            spellCheck={false}
-            autoComplete="off"
-            onChange={(e) => setAuditorKey(e.target.value)}
-          />
-        </label>
+        {registered.length > 0 ? (
+          <label>
+            <span>{t("Auditor")}</span>
+            <select value={chosenAuditor} onChange={(e) => setChosenAuditor(e.target.value)}>
+              <option value="">{t("Someone not on the registry…")}</option>
+              {registered.map((a) => (
+                <option key={a.address} value={a.address}>
+                  {a.name} — {a.address.slice(0, 8)}…
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {!picked && (
+          <label>
+            <span>{t("Auditor's public key")}</span>
+            <input
+              value={auditorKey}
+              placeholder="0x… (32 bytes)"
+              spellCheck={false}
+              autoComplete="off"
+              onChange={(e) => setAuditorKey(e.target.value)}
+            />
+          </label>
+        )}
         <label>
           <span>{t("Epoch")}</span>
           <input
@@ -113,11 +228,7 @@ export function DisclosurePanel() {
         </label>
       </div>
 
-      <button
-        className="seal-order-button"
-        onClick={() => void seal()}
-        disabled={!auditorKey.trim()}
-      >
+      <button className="seal-order-button" onClick={() => void seal()} disabled={!keyToUse}>
         <Eye size={16} />
         {t("Seal this epoch to that auditor")}
       </button>
@@ -139,23 +250,48 @@ export function DisclosurePanel() {
             )}
           </p>
           <code title={sealed.hex}>{sealed.hex}</code>
-          <button className="reset-demo" onClick={() => void copy()}>
-            <Copy size={13} /> {copied ? t("Copied") : t("Copy the sealed key")}
-          </button>
+          <div className="vault-deposit-actions">
+            <button className="reset-demo" onClick={() => void copy()}>
+              <Copy size={13} /> {copied ? t("Copied") : t("Copy the sealed key")}
+            </button>
+            {/* Offered only where the chain would accept it. */}
+            {registry && picked && !recorded && (
+              <button
+                className="seal-order-button"
+                onClick={() => void record()}
+                disabled={recording}
+              >
+                <FileSignature size={15} />
+                {recording ? t("Recording…") : t("Record this grant on chain")}
+              </button>
+            )}
+          </div>
+          {recorded && (
+            <p className="ticket-note">
+              {t("Recorded.")}{" "}
+              <a href={`${explorer}/tx/${recorded}`} target="_blank" rel="noreferrer">
+                {t("See the grant on chain")} <ExternalLink size={11} />
+              </a>
+            </p>
+          )}
         </div>
       )}
 
-      {/* What this cannot do here, said rather than implied by a button that would revert. */}
+      {/* What this can and cannot do here, said rather than implied by a button that reverts. */}
       <div className="guard-result" role="note">
         <ShieldCheck size={16} />
         <span>
-          {registry
+          {!registry
             ? t(
-                "A public, revocable record of this grant can also be written to the disclosure registry on this network — once governance has registered the auditor.",
+                "There is no disclosure registry on this network, so there is no on-chain record of the grant. The sealed key works regardless: the registry publishes that a grant happened and lets you revoke its standing — it is not what makes the disclosure possible.",
               )
-            : t(
-                "There is no disclosure registry deployed on this network, so there is no on-chain record of the grant. The sealed key above works regardless: the registry publishes that a grant happened and lets you revoke its standing, it is not what makes the disclosure possible.",
-              )}
+            : registered.length === 0
+              ? t(
+                  "The disclosure registry is deployed here, but no auditor is registered on it yet — so a grant cannot be recorded on chain and the sealed key is handed over directly. Registering an auditor publishes the key disclosures are sealed to, which is worth doing only for an auditor who actually holds the secret.",
+                )
+              : t(
+                  "Grants to a registered auditor can be recorded on chain, where they are public, timestamped and revocable.",
+                )}
         </span>
       </div>
 
