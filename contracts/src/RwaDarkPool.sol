@@ -129,6 +129,7 @@ contract RwaDarkPool is CommitmentTree, AccessControl, Pausable, ReentrancyGuard
     event SettlementDeadlineChanged(uint64 previous, uint64 current);
     event VerifiersUpdated(address shield, address unshield, address batch);
     event SolvencyShortfall(uint16 indexed assetId, uint256 totalUnits, uint256 balance);
+    event PendingDepositsDrained(uint256 inserted, uint256 remaining);
 
     error AssetNotActive(uint16 assetId);
     error ZeroAmount();
@@ -148,6 +149,11 @@ contract RwaDarkPool is CommitmentTree, AccessControl, Pausable, ReentrancyGuard
     error WindowNotVoidable(uint64 windowId, uint64 voidableAt);
     error WrongOutputCount(uint256 expected, uint256 got);
     error UnknownQuoteAsset(uint16 assetId);
+    error WithdrawalVerifierRequired();
+    error VerifierHasNoCode(address verifier);
+    error OutputsDoNotMatchProof(bytes32 expected, bytes32 got);
+    error SettlementOpen();
+    error NothingQueued();
 
     constructor(
         address admin,
@@ -260,7 +266,12 @@ contract RwaDarkPool is CommitmentTree, AccessControl, Pausable, ReentrancyGuard
         // delisted or paused asset must still be withdrawable, or delisting would strand funds.
         EligibleRegistry.Asset memory a = registry.asset(p.assetId);
 
-        if (address(unshieldVerifier) != address(0)) {
+        // Unconditional. This used to be `if (address(unshieldVerifier) != address(0))`, which
+        // made proof verification a setting: one governance call, or one bad constructor
+        // argument, and the withdrawal path became an unproven transfer of anybody's notes.
+        // `setVerifiers` now refuses a zero here, so the branch had nothing left to express
+        // except the failure it enabled.
+        {
             bytes32[] memory publicInputs = new bytes32[](8);
             publicInputs[0] = p.root;
             publicInputs[1] = p.nullifier;
@@ -406,6 +417,22 @@ contract RwaDarkPool is CommitmentTree, AccessControl, Pausable, ReentrancyGuard
         // Deposits taken before this window was sealed left the tree at an arbitrary index, so
         // align before splicing. Skipping costs one storage write and is sound: unfilled slots
         // are already zero subtrees in the frontier.
+        // The published leaves have to be the leaves the proof bound.
+        //
+        // `_insertSubtree` splices the proof's root, and the commitment list was only emitted
+        // beside it. Nothing tied the two together, so a settler could insert the real root and
+        // publish a different list — and a recipient, who rebuilds the tree from exactly these
+        // events, would compute a path that no longer authenticates their own note. The funds
+        // would be in the pool, owed, and unreachable by their owner.
+        //
+        // Recomputing the root here is ~31 Poseidon2 hashes against a settlement that already
+        // costs millions, which is a cheap price for the recovery story being a property of the
+        // contract rather than of the settler's good behaviour.
+        bytes32 published = _subtreeRootOf(p.outputCommitments);
+        if (published != p.outputsSubtreeRoot) {
+            revert OutputsDoNotMatchProof(p.outputsSubtreeRoot, published);
+        }
+
         _alignForSubtree(p.outputsSubtreeDepth);
         uint32 startIndex = nextLeafIndex;
         _insertSubtree(p.outputsSubtreeRoot, p.outputsSubtreeDepth);
@@ -472,9 +499,32 @@ contract RwaDarkPool is CommitmentTree, AccessControl, Pausable, ReentrancyGuard
         return openWindowId != 0;
     }
 
+    /// @dev The Merkle root of a power-of-two leaf set, folded in place. Same hash and the same
+    ///      pairing order as `_insertSubtree` builds from, so agreement is by construction rather
+    ///      than by a second implementation that has to be kept in step.
+    function _subtreeRootOf(bytes32[] calldata leaves) private pure returns (bytes32) {
+        uint256 n = leaves.length;
+        bytes32[] memory level = new bytes32[](n);
+        for (uint256 i = 0; i < n; ++i) {
+            level[i] = leaves[i];
+        }
+        while (n > 1) {
+            for (uint256 i = 0; i < n / 2; ++i) {
+                level[i] = _hash(level[2 * i], level[2 * i + 1]);
+            }
+            n /= 2;
+        }
+        return level[0];
+    }
+
     function _drainPendingDeposits() private {
         uint256 n = _pendingDeposits.length;
         if (n > MAX_DRAIN_PER_SETTLE) n = MAX_DRAIN_PER_SETTLE;
+        if (n > 0) _drainQueue(n);
+    }
+
+    /// @dev Insert the first `n` queued commitments, keeping the tail in order.
+    function _drainQueue(uint256 n) private {
         for (uint256 i = 0; i < n; ++i) {
             _insert(_pendingDeposits[i]);
         }
@@ -535,11 +585,50 @@ contract RwaDarkPool is CommitmentTree, AccessControl, Pausable, ReentrancyGuard
     /// @dev Verifiers are swappable because circuits get upgraded; nothing else is. There is no
     ///      function here that can move a token, change `totalUnits`, write a nullifier, or
     ///      overwrite a root.
+    /// @notice Point the pool at new verifiers. The withdrawal verifier may be replaced, never removed.
+    /// @dev The asymmetry is deliberate. `shieldVerifier` and `batchVerifier` gate entry and
+    ///      crossing: zeroing either stops a *gate*, which is recoverable and is how screening is
+    ///      currently disabled on purpose. `unshieldVerifier` gates the exit. Zeroing that one
+    ///      does not pause anything — it lets anyone withdraw anyone's notes without a proof, and
+    ///      nothing on chain would look wrong while it happened.
+    ///
+    ///      Requiring code at the address catches the other half of the same mistake: an EOA, or
+    ///      an address typed one character wrong, is not zero and would revert every honest
+    ///      withdrawal instead.
     function setVerifiers(IVerifier shield_, IVerifier unshield_, IVerifier batch_) external onlyRole(GOV_ROLE) {
+        if (address(unshield_) == address(0)) revert WithdrawalVerifierRequired();
+        if (address(unshield_).code.length == 0) revert VerifierHasNoCode(address(unshield_));
         shieldVerifier = shield_;
         unshieldVerifier = unshield_;
         batchVerifier = batch_;
         emit VerifiersUpdated(address(shield_), address(unshield_), address(batch_));
+    }
+
+    /// @notice Move queued deposits into the tree without waiting for a window to settle.
+    /// @dev Withdrawal is proof-gated and needs no operator — but a proof needs a Merkle path,
+    ///      and a path needs the note to be *in* the tree. Deposits taken while a settlement is
+    ///      open queue instead of inserting, because a single-leaf insert between subtree splices
+    ///      would break the alignment `_insertSubtree` requires. They then drained only from
+    ///      `settleBatch` and `voidWindow`, at most 32 at a time.
+    ///
+    ///      So a holder past the 32nd queued note could not withdraw until the venue happened to
+    ///      settle or void a window — on a quiet venue, indefinitely. "Withdrawal is always open"
+    ///      was true of the pool's own logic and false in the state that actually strands people.
+    ///
+    ///      Permissionless, because the person who needs it is precisely the person the operator
+    ///      might not be helping. Bounded by `max` so a long queue is drained across several
+    ///      transactions rather than one that runs out of gas and reverts the lot. Order is
+    ///      preserved: commitments enter the tree in the order they were taken.
+    ///
+    ///      Only while no settlement is open, for the alignment reason above.
+    function drainPendingDeposits(uint256 max) external nonReentrant returns (uint256 drained) {
+        if (_settlementOpen()) revert SettlementOpen();
+        uint256 queued = _pendingDeposits.length;
+        if (queued == 0) revert NothingQueued();
+        drained = max < queued ? max : queued;
+        if (drained == 0) revert ZeroAmount();
+        _drainQueue(drained);
+        emit PendingDepositsDrained(drained, _pendingDeposits.length);
     }
 
     function pendingDepositCount() external view returns (uint256) {

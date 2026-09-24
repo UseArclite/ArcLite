@@ -252,11 +252,33 @@ contract RwaDarkPoolTest is Test {
 
         pool.pause();
         pool.unpause();
-        pool.setVerifiers(IVerifier(address(0)), IVerifier(address(0)), IVerifier(address(0)));
+        // The entry and crossing gates may be zeroed — that stops a gate, which is recoverable,
+        // and is how screening is currently disabled on purpose. The exit gate may not: zeroing
+        // it would not pause anything, it would let anyone withdraw anyone's notes unproven.
+        pool.setVerifiers(IVerifier(address(0)), pool.unshieldVerifier(), IVerifier(address(0)));
         registry.setAssetStatus(nvdaId, EligibleRegistry.AssetStatus.PAUSED);
 
         assertEq(nvda.balanceOf(address(pool)), held, "no governance action moved a token");
         assertEq(pool.totalUnits(nvdaId), owed, "no governance action changed the accounting");
+    }
+
+    /// @dev Withdrawal verification used to be skipped when the verifier was the zero address,
+    ///      and the setter accepted zero. One governance call turned a proof-gated exit into an
+    ///      unproven one, and nothing about the pool would have looked wrong while it drained.
+    function test_GovernanceCannotDisableWithdrawalProofs() public {
+        vm.expectRevert(RwaDarkPool.WithdrawalVerifierRequired.selector);
+        pool.setVerifiers(shieldV, IVerifier(address(0)), batchV);
+    }
+
+    /// @dev The same mistake with a different shape: an EOA, or an address a character wrong, is
+    ///      not zero. It would revert every honest withdrawal instead of skipping the proof, so
+    ///      it fails loudly here rather than quietly later.
+    function test_WithdrawalVerifierMustBeAContract() public {
+        address notAContract = address(0xBEEF);
+        vm.expectRevert(
+            abi.encodeWithSelector(RwaDarkPool.VerifierHasNoCode.selector, notAContract)
+        );
+        pool.setVerifiers(shieldV, IVerifier(notAContract), batchV);
     }
 
     function test_ShieldIsPausableButUnshieldIsNot() public {

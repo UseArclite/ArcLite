@@ -9,6 +9,7 @@ import {PriceCommitter} from "../src/PriceCommitter.sol";
 import {RwaDarkPool} from "../src/RwaDarkPool.sol";
 import {MockAggregatorV3, MockERC20Stock} from "../src/mocks/Mocks.sol";
 import {MockVerifier} from "../src/mocks/MockVerifier.sol";
+import {Poseidon2} from "../src/libraries/Poseidon2.sol";
 
 /// @notice Settlement carries two properties the venue's safety rests on: a cross moves no
 ///         tokens, and prices were committed only after the book was sealed.
@@ -70,6 +71,23 @@ contract RwaDarkPoolSettlementTest is Test {
         ids[0] = nvdaId;
     }
 
+    /// The same fold the pool performs, written out here so the test derives the root rather than
+    /// trusting the value under test.
+    function _subtreeRoot(bytes32[] memory leaves) internal pure returns (bytes32) {
+        uint256 n = leaves.length;
+        bytes32[] memory level = new bytes32[](n);
+        for (uint256 i = 0; i < n; ++i) {
+            level[i] = leaves[i];
+        }
+        while (n > 1) {
+            for (uint256 i = 0; i < n / 2; ++i) {
+                level[i] = bytes32(Poseidon2.hash2(uint256(level[2 * i]), uint256(level[2 * i + 1])));
+            }
+            n /= 2;
+        }
+        return level[0];
+    }
+
     function _settleParams(uint64 windowId, uint8 idx)
         internal
         view
@@ -79,7 +97,10 @@ contract RwaDarkPoolSettlementTest is Test {
         p.subBatchIndex = idx;
         p.proof = hex"00";
         p.oldRoot = pool.currentRoot();
-        p.outputsSubtreeRoot = bytes32(uint256(0xBEEF));
+        // Derived from the leaves below, not invented. The pool now recomputes this and refuses
+        // a settlement whose published commitments do not fold to the root it splices — so a
+        // recipient rebuilding the tree from these events gets a path that authenticates.
+        p.outputsSubtreeRoot = bytes32(0);
         // The circuit proves a fixed 32-leaf subtree, so the depth is always 5. It used to be 2
         // here, which the pool accepted — splicing proven leaves at unproven positions.
         p.outputsSubtreeDepth = pool.OUTPUTS_SUBTREE_DEPTH();
@@ -87,11 +108,10 @@ contract RwaDarkPoolSettlementTest is Test {
         // verify a different statement than the one the circuit proves.
         p.nullifiers = new bytes32[](pool.BATCH_ORDERS());
         p.nullifiers[0] = bytes32(uint256(0x900 + idx));
-        // 32 outputs, as the circuit always proves. Their contents are the settler's to publish;
-        // the contract only fixes the count, because a client checks them against the proven
-        // subtree root itself.
+        // 32 outputs, as the circuit always proves.
         p.outputCommitments = new bytes32[](1 << pool.OUTPUTS_SUBTREE_DEPTH());
         p.outputCommitments[0] = bytes32(uint256(0x01));
+        p.outputsSubtreeRoot = _subtreeRoot(p.outputCommitments);
         p.receiptsRoot = bytes32(uint256(0xAAA));
         p.tapeLeaf = bytes32(uint256(0x7A9E));
         p.filledOrders = 1;
@@ -165,6 +185,111 @@ contract RwaDarkPoolSettlementTest is Test {
 
     /// @dev Sub-batches must land in order: each proves against the previous tree state, so an
     ///      out-of-order settlement would splice a subtree at the wrong index.
+    /// @dev The settler used to be free to publish any 32 leaves beside the proven root. A
+    ///      recipient rebuilds their Merkle path from exactly this event, so a mismatch means a
+    ///      path that does not authenticate a note the pool is nonetheless holding — funds owed
+    ///      and unreachable by their owner, with nothing on chain looking wrong.
+    function test_PublishedOutputsMustFoldToTheProvenRoot() public {
+        _deposit(100e18, 1);
+        pool.sealWindow(21, bytes32(uint256(0xD1)), 4, 1);
+        pricer.commitWindow(21, _ids());
+        RwaDarkPool.SettleParams memory p = _settleParams(21, 0);
+        bytes32 proven = p.outputsSubtreeRoot;
+
+        // One leaf altered, everything else untouched.
+        p.outputCommitments[7] = bytes32(uint256(0xDEAD));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                RwaDarkPool.OutputsDoNotMatchProof.selector, proven, _subtreeRoot(p.outputCommitments)
+            )
+        );
+        pool.settleBatch(p);
+    }
+
+    /// @dev The honest path, stated as the property a client depends on: the leaves in the event
+    ///      are the leaves under the root that was spliced.
+    function test_PublishedOutputsAreTheSplicedLeaves() public {
+        _deposit(100e18, 1);
+        pool.sealWindow(22, bytes32(uint256(0xD2)), 4, 1);
+        pricer.commitWindow(22, _ids());
+        RwaDarkPool.SettleParams memory p = _settleParams(22, 0);
+        vm.recordLogs();
+        pool.settleBatch(p);
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bool seen;
+        for (uint256 i = 0; i < logs.length; ++i) {
+            if (logs[i].topics[0] != keccak256("OutputsPublished(uint64,uint8,uint32,bytes32,bytes32[])")) continue;
+            (,, bytes32 root, bytes32[] memory published) =
+                abi.decode(logs[i].data, (uint8, uint32, bytes32, bytes32[]));
+            assertEq(_subtreeRoot(published), root, "published leaves do not fold to the cited root");
+            seen = true;
+        }
+        assertTrue(seen, "no OutputsPublished event");
+    }
+
+    /// @dev The case that stranded people. Deposits taken while a settlement is open queue
+    ///      instead of inserting, and the queue drained only from `settleBatch` and `voidWindow`,
+    ///      32 at a time. Past the 32nd, a holder had no Merkle path and so could not withdraw
+    ///      until the venue happened to settle another window — on a quiet venue, indefinitely.
+    ///      "Withdrawal is always open" was true of the pool's logic and false in practice.
+    function test_AnyoneCanDrainAQueueLongerThanOneSettlement() public {
+        _deposit(100e18, 1);
+        pool.sealWindow(31, bytes32(uint256(0xE1)), 4, 1);
+        pricer.commitWindow(31, _ids());
+
+        // 40 deposits arrive while the window is open, so all of them queue.
+        for (uint256 i = 0; i < 40; ++i) {
+            _deposit(1e18, 0x5000 + i);
+        }
+        assertEq(pool.pendingDepositCount(), 40, "deposits should have queued");
+
+        // Settling drains 32 and leaves 8 — the notes that used to be unreachable.
+        pool.settleBatch(_settleParams(31, 0));
+        assertEq(pool.pendingDepositCount(), 8, "settlement drains at most 32");
+
+        // Anyone at all, with no role and no window, can finish the job.
+        address stranger = address(0xDEFACED);
+        vm.prank(stranger);
+        uint256 drained = pool.drainPendingDeposits(8);
+        assertEq(drained, 8, "the remainder drains");
+        assertEq(pool.pendingDepositCount(), 0, "nothing is left queued");
+    }
+
+    /// @dev Bounded so a long queue is drained across several transactions rather than one that
+    ///      runs out of gas and reverts the lot, and in order, so the tree receives the
+    ///      commitments as they were taken.
+    function test_DrainIsBoundedAndKeepsOrder() public {
+        pool.sealWindow(32, bytes32(uint256(0xE2)), 4, 1);
+        pricer.commitWindow(32, _ids());
+        for (uint256 i = 0; i < 5; ++i) {
+            _deposit(1e18, 0x6000 + i);
+        }
+        pool.voidWindow(32);
+        assertEq(pool.pendingDepositCount(), 0, "voiding drains what it can");
+
+        pool.sealWindow(33, bytes32(uint256(0xE3)), 4, 1);
+        pricer.commitWindow(33, _ids());
+        for (uint256 i = 0; i < 5; ++i) {
+            _deposit(1e18, 0x7000 + i);
+        }
+        pool.voidWindow(33);
+
+        // With no window open and nothing queued, there is nothing to ask for.
+        vm.expectRevert(RwaDarkPool.NothingQueued.selector);
+        pool.drainPendingDeposits(1);
+    }
+
+    /// @dev Only while no settlement is open: a single-leaf insert between subtree splices would
+    ///      break the alignment `_insertSubtree` requires.
+    function test_DrainIsRefusedWhileASettlementIsOpen() public {
+        pool.sealWindow(34, bytes32(uint256(0xE4)), 4, 1);
+        pricer.commitWindow(34, _ids());
+        _deposit(1e18, 0x8000);
+        vm.expectRevert(RwaDarkPool.SettlementOpen.selector);
+        pool.drainPendingDeposits(1);
+    }
+
     function test_SubBatchesMustArriveInOrder() public {
         _deposit(100e18, 1);
         pool.sealWindow(5, bytes32(uint256(0xC6)), 8, 2);
