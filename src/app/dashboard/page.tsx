@@ -23,6 +23,7 @@ import { WindowRitual } from "../components/window-ritual";
 import { SettlementWatch } from "../components/settlement-watch";
 import { PrivacyMeter } from "../components/privacy-meter";
 import { MarketChart } from "../components/market-chart";
+import { CrossingLine } from "../components/crossing-line";
 import { DisclosurePanel } from "../components/disclosure-panel";
 import { feature } from "../lib/features";
 import { SESSION_POLICY, type SessionKind } from "@/lib/chain/sessions";
@@ -324,6 +325,9 @@ export default function Dashboard() {
                     {freshness.text}
                   </p>
                 )}
+                {/* Beneath the price, because it qualifies the price: this is what an order at
+                    that reference has historically done. */}
+                {feature("crossing-history") && <CrossingLine symbol={asset} />}
                 {feature("chart-scale") ? (
                   <MarketChart series={series} loading={seriesLoading} />
                 ) : (

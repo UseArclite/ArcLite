@@ -53,7 +53,9 @@ export type Feature =
   /** #36 — The dashboard as a terminal: dense, monospace, explanation folded away. */
   | "terminal"
   /** #22 — The venue's heartbeat: is anyone else here, and when were they last. */
-  | "order-pulse";
+  | "order-pulse"
+  /** #13 — Whether this asset has ever actually crossed, as observed history. */
+  | "crossing-history";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be

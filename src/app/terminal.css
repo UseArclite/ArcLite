@@ -749,3 +749,56 @@
   font-size: 15px;
   margin-right: 3px;
 }
+
+/* ── Crossing history ────────────────────────────────────────────────────
+ * Observed record, not a forecast — so it is typed as data rather than as a recommendation, and
+ * the only colour it earns is for the one state that is unambiguously good news. */
+
+.dashboard[data-skin="terminal"] .crossing-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 8px 0 0;
+  font: 11px/1.5 var(--mono);
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .crossing-line.has-crossed {
+  color: var(--t-good);
+}
+.dashboard[data-skin="terminal"] .crossing-line svg {
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+/* ── Portalled menus ─────────────────────────────────────────────────────
+ * Radix renders Select content into a portal on `document.body`, outside `.dashboard`, so
+ * neither the skin's descendant rules nor its custom properties reach it — the asset picker
+ * opened as a light editorial panel over a black terminal. Same root cause as the site header,
+ * and the same fix: reach up to the document and match the portal while a skinned dashboard is
+ * on screen. */
+
+:root:has(main[data-skin="terminal"]) [data-slot="select-content"] {
+  background: #0c0c18;
+  border: 1px solid #1e2740;
+  border-radius: 0;
+  color: #cdd7e3;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  box-shadow: 0 10px 30px #00000080;
+}
+:root:has(main[data-skin="terminal"]) [data-slot="select-item"] {
+  border-radius: 0;
+  color: #cdd7e3;
+}
+:root:has(main[data-skin="terminal"]) [data-slot="select-item"][data-highlighted] {
+  background: #14243a;
+  color: #00e5ff;
+}
+:root:has(main[data-skin="terminal"]) [data-slot="select-label"],
+:root:has(main[data-skin="terminal"]) [data-slot="select-scroll-up-button"],
+:root:has(main[data-skin="terminal"]) [data-slot="select-scroll-down-button"] {
+  color: #74849a;
+}
+:root:has(main[data-skin="terminal"]) [data-slot="select-separator"] {
+  background: #1e2740;
+}

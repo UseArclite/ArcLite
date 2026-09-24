@@ -23,6 +23,7 @@ import { Route as ApiAuthVerifyRouteImport } from './routes/api/auth/verify'
 import { Route as ApiCronOracleRouteImport } from './routes/api/cron/oracle'
 import { Route as ApiCronTickRouteImport } from './routes/api/cron/tick'
 import { Route as ApiMarketAssetsRouteImport } from './routes/api/market/assets'
+import { Route as ApiMarketCrossingRouteImport } from './routes/api/market/crossing'
 import { Route as ApiMarketSeriesRouteImport } from './routes/api/market/series'
 import { Route as ApiMarketWindowRouteImport } from './routes/api/market/window'
 import { Route as ApiNotesDepositsRouteImport } from './routes/api/notes/deposits'
@@ -103,6 +104,11 @@ const ApiMarketAssetsRoute = ApiMarketAssetsRouteImport.update({
   path: '/api/market/assets',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMarketCrossingRoute = ApiMarketCrossingRouteImport.update({
+  id: '/api/market/crossing',
+  path: '/api/market/crossing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMarketSeriesRoute = ApiMarketSeriesRouteImport.update({
   id: '/api/market/series',
   path: '/api/market/series',
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/api/cron/oracle': typeof ApiCronOracleRoute
   '/api/cron/tick': typeof ApiCronTickRoute
   '/api/market/assets': typeof ApiMarketAssetsRoute
+  '/api/market/crossing': typeof ApiMarketCrossingRoute
   '/api/market/series': typeof ApiMarketSeriesRoute
   '/api/market/window': typeof ApiMarketWindowRoute
   '/api/notes/deposits': typeof ApiNotesDepositsRoute
@@ -189,6 +196,7 @@ export interface FileRoutesByTo {
   '/api/cron/oracle': typeof ApiCronOracleRoute
   '/api/cron/tick': typeof ApiCronTickRoute
   '/api/market/assets': typeof ApiMarketAssetsRoute
+  '/api/market/crossing': typeof ApiMarketCrossingRoute
   '/api/market/series': typeof ApiMarketSeriesRoute
   '/api/market/window': typeof ApiMarketWindowRoute
   '/api/notes/deposits': typeof ApiNotesDepositsRoute
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/api/cron/oracle': typeof ApiCronOracleRoute
   '/api/cron/tick': typeof ApiCronTickRoute
   '/api/market/assets': typeof ApiMarketAssetsRoute
+  '/api/market/crossing': typeof ApiMarketCrossingRoute
   '/api/market/series': typeof ApiMarketSeriesRoute
   '/api/market/window': typeof ApiMarketWindowRoute
   '/api/notes/deposits': typeof ApiNotesDepositsRoute
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/api/cron/oracle'
     | '/api/cron/tick'
     | '/api/market/assets'
+    | '/api/market/crossing'
     | '/api/market/series'
     | '/api/market/window'
     | '/api/notes/deposits'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/api/cron/oracle'
     | '/api/cron/tick'
     | '/api/market/assets'
+    | '/api/market/crossing'
     | '/api/market/series'
     | '/api/market/window'
     | '/api/notes/deposits'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/api/cron/oracle'
     | '/api/cron/tick'
     | '/api/market/assets'
+    | '/api/market/crossing'
     | '/api/market/series'
     | '/api/market/window'
     | '/api/notes/deposits'
@@ -318,6 +330,7 @@ export interface RootRouteChildren {
   ApiCronOracleRoute: typeof ApiCronOracleRoute
   ApiCronTickRoute: typeof ApiCronTickRoute
   ApiMarketAssetsRoute: typeof ApiMarketAssetsRoute
+  ApiMarketCrossingRoute: typeof ApiMarketCrossingRoute
   ApiMarketSeriesRoute: typeof ApiMarketSeriesRoute
   ApiMarketWindowRoute: typeof ApiMarketWindowRoute
   ApiNotesDepositsRoute: typeof ApiNotesDepositsRoute
@@ -429,6 +442,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMarketAssetsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/market/crossing': {
+      id: '/api/market/crossing'
+      path: '/api/market/crossing'
+      fullPath: '/api/market/crossing'
+      preLoaderRoute: typeof ApiMarketCrossingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/market/series': {
       id: '/api/market/series'
       path: '/api/market/series'
@@ -510,6 +530,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCronOracleRoute: ApiCronOracleRoute,
   ApiCronTickRoute: ApiCronTickRoute,
   ApiMarketAssetsRoute: ApiMarketAssetsRoute,
+  ApiMarketCrossingRoute: ApiMarketCrossingRoute,
   ApiMarketSeriesRoute: ApiMarketSeriesRoute,
   ApiMarketWindowRoute: ApiMarketWindowRoute,
   ApiNotesDepositsRoute: ApiNotesDepositsRoute,
