@@ -22,6 +22,7 @@ import { AssetMark } from "../components/asset-mark";
 import { WindowRitual } from "../components/window-ritual";
 import { SettlementWatch } from "../components/settlement-watch";
 import { PrivacyMeter } from "../components/privacy-meter";
+import { MarketChart } from "../components/market-chart";
 import { feature } from "../lib/features";
 import { SESSION_POLICY, type SessionKind } from "@/lib/chain/sessions";
 import { ConnectButton } from "../components/connect-button";
@@ -313,51 +314,55 @@ export default function Dashboard() {
                     {freshness.text}
                   </p>
                 )}
-                <div className="market-chart">
-                  <svg
-                    viewBox="0 0 400 160"
-                    role="img"
-                    aria-label={
-                      series
-                        ? `${series.symbol} reference price, ${series.axis.label.toLowerCase()}, ${series.changePct >= 0 ? "up" : "down"} ${Math.abs(series.changePct).toFixed(2)} percent`
-                        : "Reference price chart loading"
-                    }
-                    preserveAspectRatio="none"
-                  >
-                    <defs>
-                      <linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#00b9e4" stopOpacity=".22" />
-                        <stop offset="100%" stopColor="#00ffff" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-                    {[25, 65, 105, 145].map((y) => (
-                      <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="#00008016" />
-                    ))}
-                    {line && (
-                      <>
-                        <polygon points={`0,160 ${line} 400,160`} fill="url(#chart-fill)" />
-                        <polyline
-                          points={line}
-                          fill="none"
-                          stroke="#0058aa"
-                          strokeWidth="1.5"
-                          vectorEffect="non-scaling-stroke"
-                        />
-                      </>
-                    )}
-                  </svg>
-                  <div className="chart-axis">
-                    <span>{series?.axis.left ?? ""}</span>
-                    <span>
-                      {seriesLoading
-                        ? "LOADING HISTORY…"
-                        : series
-                          ? series.axis.label
-                          : "HISTORY UNAVAILABLE"}
-                    </span>
-                    <span>{series?.axis.right ?? ""}</span>
+                {feature("chart-scale") ? (
+                  <MarketChart series={series} loading={seriesLoading} />
+                ) : (
+                  <div className="market-chart">
+                    <svg
+                      viewBox="0 0 400 160"
+                      role="img"
+                      aria-label={
+                        series
+                          ? `${series.symbol} reference price, ${series.axis.label.toLowerCase()}, ${series.changePct >= 0 ? "up" : "down"} ${Math.abs(series.changePct).toFixed(2)} percent`
+                          : "Reference price chart loading"
+                      }
+                      preserveAspectRatio="none"
+                    >
+                      <defs>
+                        <linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#00b9e4" stopOpacity=".22" />
+                          <stop offset="100%" stopColor="#00ffff" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      {[25, 65, 105, 145].map((y) => (
+                        <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="#00008016" />
+                      ))}
+                      {line && (
+                        <>
+                          <polygon points={`0,160 ${line} 400,160`} fill="url(#chart-fill)" />
+                          <polyline
+                            points={line}
+                            fill="none"
+                            stroke="#0058aa"
+                            strokeWidth="1.5"
+                            vectorEffect="non-scaling-stroke"
+                          />
+                        </>
+                      )}
+                    </svg>
+                    <div className="chart-axis">
+                      <span>{series?.axis.left ?? ""}</span>
+                      <span>
+                        {seriesLoading
+                          ? "LOADING HISTORY…"
+                          : series
+                            ? series.axis.label
+                            : "HISTORY UNAVAILABLE"}
+                      </span>
+                      <span>{series?.axis.right ?? ""}</span>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="chart-bottom">
                   <div role="group" aria-label="Chart period" className="range-buttons">
                     {(["1D", "1W", "1M"] as Range[]).map((r) => (

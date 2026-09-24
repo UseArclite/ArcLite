@@ -272,3 +272,33 @@ html{scroll-padding-top:95px}
 .privacy-factors b{display:block;font:600 11px/1.4 var(--sans);color:#080842}
 .privacy-factors small{display:block;margin-top:3px;font:11px/1.6 var(--sans);color:#4d496a}
 @media(prefers-reduced-motion:reduce){.privacy-toggle svg{transition:none}}
+
+/* #16 — the price scale. Every glyph sits outside the SVG: that element carries
+   preserveAspectRatio="none" so the polyline can fill a responsive box, which
+   also stretches anything drawn inside it. The percentages match the projection
+   in src/lib/chain/series.ts — viewBox 0 0 400 160 with a 12-unit pad, so the
+   maximum is at 7.5% and the minimum at 92.5%. */
+.market-chart.has-axis{position:relative;height:auto;padding-top:0;background:none}
+.chart-plot{position:relative;height:215px;padding-right:62px;background-image:linear-gradient(#0808420b 1px,transparent 1px),linear-gradient(90deg,#0808420b 1px,transparent 1px);background-size:40px 40px;touch-action:pan-y}
+.chart-area{position:relative;height:100%}
+.chart-plot svg{display:block;width:100%;height:100%;overflow:visible}
+
+.chart-scale{position:absolute;inset:0 0 0 auto;width:62px;pointer-events:none}
+.chart-scale span{position:absolute;right:0;transform:translateY(-50%);font:10px/1 var(--sans);color:#6a6789;font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:8px}
+
+.chart-crosshair{position:absolute;top:0;bottom:0;width:1px;background:#08084244;pointer-events:none;transform:translateX(-.5px)}
+.chart-dot{position:absolute;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:#0058aa;box-shadow:0 0 0 3px #0058aa22;pointer-events:none}
+.chart-readout{position:absolute;top:4px;transform:translateX(-50%);background:#080842;color:#f5ecf2;padding:6px 9px;pointer-events:none;white-space:nowrap;z-index:2}
+/* Past the right-hand side it would sit under the scale, so it flips. */
+.chart-readout.is-left{transform:translateX(-100%) translateX(-10px)}
+.chart-readout b{display:block;font:600 12px/1.3 var(--sans);font-variant-numeric:tabular-nums}
+.chart-readout small{display:block;font:10px/1.4 var(--sans);opacity:.75}
+
+.market-chart.has-axis .chart-axis{margin-top:10px;padding-right:62px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+@media(max-width:760px){
+ .chart-plot{padding-right:52px;height:190px}
+ .chart-scale{width:52px}
+ .market-chart.has-axis .chart-axis{padding-right:52px}
+}

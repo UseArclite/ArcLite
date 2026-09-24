@@ -369,9 +369,20 @@ export function useWindow() {
 
 export type Range = "1D" | "1W" | "1M";
 
+export interface SeriesPoint {
+  /** Epoch milliseconds, as the feed reported the round. */
+  t: number;
+  v: number;
+  session: SessionKind;
+}
+
 export interface Series {
   symbol: string;
   range: Range;
+  /** The plotted rounds. Served all along and never read: the chart drew the polyline alone. */
+  points: SeriesPoint[];
+  from: number;
+  to: number;
   min: number;
   max: number;
   first: number;

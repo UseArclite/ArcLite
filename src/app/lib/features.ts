@@ -41,7 +41,9 @@ export type Feature =
   /** #21 — Say what became of an order, even with the tab in the background. */
   | "settlement-alerts"
   /** #24 — How private this position actually is, including when the answer is "not". */
-  | "privacy-meter";
+  | "privacy-meter"
+  /** #16 — A price scale and a hover readout on the reference chart. */
+  | "chart-scale";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be
