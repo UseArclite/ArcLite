@@ -108,7 +108,14 @@ export const ARCLITE = {
      */
     screeningVerifier: "0x59fF64533400A6605CCdA9Dd10d5AC1E5FF3Cc15",
     unshieldVerifier: "0x1870F3D4a7D91B4dC3d735939dbec9538096Dc77",
-    batchVerifier: "0x54c62F552449FD7031ddA89B978eC2925C411D01",
+    /**
+     * Redeployed 2026-09-24. The circuit it verifies was corrected — the price-table selector
+     * did not prove the chosen row was inside the committed range — and a new verification key
+     * means the old verifier rejects every proof the fixed circuit produces. The retired one
+     * stays at 0x54c62F55…C411D01 and is still a real contract, which is why the deployment
+     * table rather than an address is what decides which verifier is current.
+     */
+    batchVerifier: "0xe829a754DabD82738197D725a943AcDc148AEd88",
     /** Not deployed on mainnet yet — the tape and disclosure lanes are Phase 5. */
     tapeRegistry: null,
     disclosureRegistry: null,
