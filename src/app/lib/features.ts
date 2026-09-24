@@ -55,7 +55,9 @@ export type Feature =
   /** #22 — The venue's heartbeat: is anyone else here, and when were they last. */
   | "order-pulse"
   /** #13 — Whether this asset has ever actually crossed, as observed history. */
-  | "crossing-history";
+  | "crossing-history"
+  /** #11 — The four steps to a first trade, with the current one marked. */
+  | "first-run";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be

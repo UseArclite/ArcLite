@@ -802,3 +802,71 @@
 :root:has(main[data-skin="terminal"]) [data-slot="select-separator"] {
   background: #1e2740;
 }
+
+/* ── First run ───────────────────────────────────────────────────────────
+ * A path, not a poster. Only the step in hand carries its explanation, because four paragraphs
+ * of guidance is the density problem this dashboard was rebuilt to remove. */
+
+.dashboard[data-skin="terminal"] .first-run {
+  margin: 0 0 16px;
+  padding: 13px 15px;
+  border: 1px solid var(--t-line);
+  background: #0a0a14;
+}
+.dashboard[data-skin="terminal"] .first-run ol {
+  list-style: none;
+  margin: 9px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+}
+.dashboard[data-skin="terminal"] .first-run li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font: 11px/1.45 var(--mono);
+  color: #4e5c72;
+}
+.dashboard[data-skin="terminal"] .first-run li.is-done {
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .first-run li.is-done .first-run-mark {
+  color: var(--t-good);
+}
+.dashboard[data-skin="terminal"] .first-run li.is-current {
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .first-run li.is-current .first-run-mark,
+.dashboard[data-skin="terminal"] .first-run li.is-current b {
+  color: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .first-run-mark {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.dashboard[data-skin="terminal"] .first-run-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.dashboard[data-skin="terminal"] .first-run-body b {
+  font: 600 11px/1.3 var(--mono);
+  letter-spacing: 0.04em;
+}
+.dashboard[data-skin="terminal"] .first-run-body small {
+  font: 10px/1.55 var(--mono);
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .first-run.is-unavailable {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font: 11px/1.5 var(--mono);
+  color: var(--t-warn);
+  border-color: var(--t-warn);
+}
+.dashboard[data-skin="terminal"] .first-run.is-unavailable svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}

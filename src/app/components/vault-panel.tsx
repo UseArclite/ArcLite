@@ -16,6 +16,7 @@ import { erc20Abi, useVault, type VaultNote } from "./vault-provider";
 import { Holdings } from "./holdings";
 import { TransactionTrail } from "./transaction-trail";
 import { VaultLock } from "./vault-lock";
+import { FirstRun } from "./first-run";
 import { feature } from "../lib/features";
 import { AmountField } from "./amount-field";
 import { displayAmount, formatAmount, parseAmount } from "../lib/units";
@@ -46,6 +47,10 @@ export function VaultPanel() {
         </div>
         {vault.status === "unlocked" ? <Unlock size={19} /> : <LockKeyhole size={19} />}
       </div>
+
+      {/* Above the lock/unlock branch, because the first two steps happen while still locked and
+          a guide that only appeared after unlocking would miss the people who need it most. */}
+      {feature("first-run") && <FirstRun />}
 
       {vault.status !== "unlocked" ? (
         <>
