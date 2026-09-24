@@ -5,8 +5,16 @@ import { usePathname } from "@/lib/navigation";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ArrowUpRight } from "lucide-react";
 
+/**
+ * Where each social icon points.
+ *
+ * A name absent from here renders as a button that opens "Coming soon" instead of a link, which
+ * is how the GitHub icon behaved while there was no public repository to send anyone to. Adding
+ * a URL is the whole of turning one on.
+ */
 const socialLinks: Record<string, string> = {
   X: "https://x.com/UseArclite",
+  GitHub: "https://github.com/UseArclite/ArcLite",
   Telegram: "https://t.me/arcliteonrobinhood",
 };
 export function Socials({ onSelect }: { onSelect: (name: string) => void }) {
