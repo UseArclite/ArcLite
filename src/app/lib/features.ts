@@ -47,7 +47,9 @@ export type Feature =
   /** #25 — Seal one epoch's viewing key to an auditor. */
   | "disclosure"
   /** #26 — Idle auto-lock, and saying what locking actually does. */
-  | "vault-lock";
+  | "vault-lock"
+  /** #27 — How linkable a withdrawal would be to the deposit that funded it. */
+  | "withdraw-timing";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be

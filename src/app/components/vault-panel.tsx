@@ -6,9 +6,11 @@ import {
   KeyRound,
   Loader2,
   LockKeyhole,
+  ShieldAlert,
   ShieldCheck,
   Unlock,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useAccount, useWriteContract } from "wagmi";
 import { erc20Abi, useVault, type VaultNote } from "./vault-provider";
 import { Holdings } from "./holdings";
@@ -17,6 +19,7 @@ import { VaultLock } from "./vault-lock";
 import { feature } from "../lib/features";
 import { AmountField } from "./amount-field";
 import { displayAmount, formatAmount, parseAmount } from "../lib/units";
+import { assessWithdrawal } from "../lib/withdraw-privacy";
 import { useT } from "../lib/i18n";
 
 /**
@@ -163,15 +166,66 @@ export function VaultPanel() {
 }
 
 /**
- * Minting test tokens and shielding them.
+ * What this withdrawal would tell anyone reading the chain.
  *
- * Both are testnet-only affordances and say so. The faucet exists because `TestnetStockToken`
- * has an open `mint` — there is no real issuer to ask — and it refuses to deploy on mainnet, so
- * this control cannot follow it there.
+ * The privacy meter already says timing correlation is the weak link at small set sizes. It says
+ * it on the same tab, in the abstract, to somebody who is not currently withdrawing — and the
+ * moment the warning could change a decision is this one, with an amount typed and a button
+ * about to be pressed.
  *
- * Depositing is two transactions the trader signs: an approval, then `shield`. What reaches the
- * chain is a commitment, so the pool learns the amount and the asset and nothing else.
+ * The deposit times come from the chain rather than from this browser's records: block
+ * timestamps are what an observer would use, a recovered vault has no local record of when
+ * anything landed, and `/api/notes/deposits` already reads exactly these logs for recovery.
+ * Reading it here adds no linkage that was not already public — `shield` is a plain transfer
+ * from a known address, which is the whole reason this warning has anything to warn about.
+ *
+ * Nothing here blocks the button. `unshield` is the path that must always work; the point is
+ * that a holder taking a linkability hit should be taking it knowingly.
  */
+function Linkability({ units, address }: { units: string; address?: `0x${string}` }) {
+  const vault = useVault();
+
+  const { data, isPending } = useQuery({
+    queryKey: ["deposit-times", address],
+    enabled: Boolean(address),
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      // `credentials: 'omit'` for the same reason the order route uses it: nothing about this
+      // request needs a session, so it should not carry one.
+      const response = await fetch(`/api/notes/deposits?address=${address}`, {
+        credentials: "omit",
+      });
+      const body = (await response.json()) as {
+        deposits?: { at: number | null; units: string }[];
+      };
+      return body.deposits ?? [];
+    },
+  });
+
+  // Nothing typed is nothing to assess, and a spinner here would be noise in a form.
+  if (!units || isPending) return null;
+
+  const deposits = data ?? [];
+  const note = assessWithdrawal({
+    depositTimes: deposits.map((d) => d.at).filter((at): at is number => typeof at === "number"),
+    depositUnits: deposits.map((d) => d.units),
+    units,
+    // The same figure the privacy meter shows, for the same reason: your own notes hide you from
+    // nobody, so a pool you are most of is not a crowd.
+    othersInPool: Math.max(0, vault.commitmentCount - vault.notes.length),
+  });
+
+  return (
+    <div className={"guard-result" + (note.level === "high" ? " deferred" : "")} role="note">
+      {note.level === "high" ? <ShieldAlert size={16} /> : <ShieldCheck size={16} />}
+      <span>
+        {note.headline}
+        {note.advice ? ` ${note.advice}` : ""}
+      </span>
+    </div>
+  );
+}
+
 /**
  * Withdrawing, proved in this browser.
  *
@@ -284,6 +338,7 @@ function Withdraw() {
           </label>
         )}
       </div>
+      {feature("withdraw-timing") && <Linkability units={amount} address={address} />}
       <div className="vault-deposit-actions">
         <button
           className="seal-order-button"
@@ -313,6 +368,16 @@ function Withdraw() {
 /** One whole token in raw units, from the asset's own decimals. */
 const wholeUnit = (decimals: number) => (10n ** BigInt(decimals)).toString();
 
+/**
+ * Minting test tokens and shielding them.
+ *
+ * Both are testnet-only affordances and say so. The faucet exists because `TestnetStockToken`
+ * has an open `mint` — there is no real issuer to ask — and it refuses to deploy on mainnet, so
+ * this control cannot follow it there.
+ *
+ * Depositing is two transactions the trader signs: an approval, then `shield`. What reaches the
+ * chain is a commitment, so the pool learns the amount and the asset and nothing else.
+ */
 function Deposit() {
   const t = useT();
   const vault = useVault();

@@ -112,8 +112,24 @@ export const Route = createFileRoute("/api/notes/deposits")({
           // client's search start where the answer usually is.
           mine.sort((a, b) => Number(BigInt(a.blockNumber) - BigInt(b.blockNumber)));
 
+          // When each deposit landed, so the withdraw form can say how linkable the two would be.
+          //
+          // Fetched per distinct block rather than per deposit: several deposits in one block is
+          // ordinary, and the timestamp is the block's. A wallet has few deposits and this is not
+          // a hot path, but there is no reason to ask the same question twice.
+          const blocks = [...new Set(mine.map((d) => d.blockNumber))];
+          const times = new Map<string, number>();
+          for (const b of blocks) {
+            const block = await client.getBlock({ blockNumber: BigInt(b) }).catch(() => null);
+            if (block) times.set(b, Number(block.timestamp) * 1000);
+          }
+
           return Response.json(
-            { chainId, pool, deposits: mine },
+            {
+              chainId,
+              pool,
+              deposits: mine.map((d) => ({ ...d, at: times.get(d.blockNumber) ?? null })),
+            },
             { headers: { "cache-control": "no-store" } },
           );
         } catch (error) {
