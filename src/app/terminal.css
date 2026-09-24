@@ -1,0 +1,698 @@
+/*
+ * The dashboard as a terminal.
+ *
+ * The page already called itself "ARCLITE / PRIVATE EXECUTION TERMINAL" in its own kicker while
+ * rendering as a light editorial spread — serif headings, a halftone bust, an engraved plate on
+ * the Proofs tab, and generous prose between every control. That gap is what a trader meant by
+ * "this needs to look like a proper terminal": not a complaint about taste, a complaint that the
+ * execution surface reads as an article.
+ *
+ * Everything here is scoped under `.dashboard[data-skin="terminal"]`, which the page sets only
+ * when the `terminal` flag is on. Nothing in this file can reach the marketing pages, and turning
+ * the flag off restores the editorial dashboard byte for byte — the old rules are untouched and
+ * simply stop being overridden. That is the whole reason for a skin rather than an edit.
+ *
+ * The marketing site keeps the editorial identity. Splitting the two is deliberate: the pages
+ * that argue for the venue and the page that operates it are read by people in different states
+ * of mind, and one visual language was serving the first badly and the second worse.
+ */
+
+/* ── The disclosure primitive ─────────────────────────────────────────────
+ * Unscoped: `<Detail>` is used in both skins, and the folding is what fixes the density even
+ * where the terminal palette is off. */
+
+.panel-detail {
+  margin-top: 12px;
+  border-top: 1px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 18%, transparent);
+  padding-top: 10px;
+}
+.panel-detail > summary {
+  cursor: pointer;
+  list-style: none;
+  font: 11px/1.4 var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.62;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  user-select: none;
+}
+.panel-detail > summary::-webkit-details-marker {
+  display: none;
+}
+.panel-detail > summary::before {
+  content: "▸";
+  font-size: 9px;
+  transition: transform 0.15s ease;
+}
+.panel-detail[open] > summary::before {
+  transform: rotate(90deg);
+}
+.panel-detail > summary:hover {
+  opacity: 1;
+}
+.panel-detail-body {
+  padding-top: 10px;
+  font-size: 12px;
+  line-height: 1.55;
+  opacity: 0.82;
+}
+.panel-detail-body > p {
+  margin: 0 0 9px;
+}
+.panel-detail-body > p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Ground ───────────────────────────────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] {
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --t-bg: #07070f;
+  --t-panel: #0c0c18;
+  --t-line: #1e2740;
+  --t-line-soft: #151c30;
+  --t-text: #cdd7e3;
+  --t-dim: #74849a;
+  --t-accent: #00e5ff;
+  --t-good: #45e0a0;
+  --t-warn: #ffc55c;
+  --t-bad: #ff5f8a;
+
+  background: var(--t-bg);
+  color: var(--t-text);
+  /* The graph-paper grid was carrying the light theme. A terminal's ground is flat. */
+  background-image: none;
+
+  --background: var(--t-panel);
+  --foreground: var(--t-text);
+  --popover: #10101f;
+  --popover-foreground: var(--t-text);
+  --primary: var(--t-accent);
+  --primary-foreground: #04040a;
+  --muted: #141426;
+  --muted-foreground: var(--t-dim);
+  --accent: #14243a;
+  --accent-foreground: var(--t-text);
+  --border: var(--t-line);
+  --input: var(--t-line);
+  --ring: var(--t-accent);
+
+  font-family: var(--mono);
+  font-size: 13px;
+  /* Columns of figures only line up if every glyph is the same width. */
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard[data-skin="terminal"] .dashboard-shell {
+  width: min(1560px, 94%);
+  /* The site header is fixed and about 76px tall here; the back link is the first thing in the
+     shell, so anything less hides it behind the chrome. */
+  padding-top: 104px;
+}
+
+/* ── Header: a status line, not a masthead ───────────────────────────── */
+
+.dashboard[data-skin="terminal"] .dashboard-title {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 14px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--t-line);
+}
+/* Decorative on an operating surface. The marketing pages still carry both. */
+.dashboard[data-skin="terminal"] .terminal-illustration,
+.dashboard[data-skin="terminal"] .proof-engraving {
+  display: none;
+}
+.dashboard[data-skin="terminal"] .dashboard-title h1 {
+  font: 600 15px/1.2 var(--mono);
+  letter-spacing: 0.02em;
+  margin: 6px 0 2px;
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .dashboard-title > div > p {
+  font: 11px/1.4 var(--mono);
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .terminal-kicker {
+  font: 10px/1 var(--mono);
+  letter-spacing: 0.16em;
+  color: var(--t-accent);
+  margin-top: 0;
+}
+.dashboard[data-skin="terminal"] .back-link {
+  font: 10px/1 var(--mono);
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .demo-badge {
+  margin-bottom: 0;
+}
+.dashboard[data-skin="terminal"] .demo-badge > span {
+  font: 10px/1 var(--mono);
+  letter-spacing: 0.1em;
+  padding: 5px 9px;
+  border: 1px solid var(--t-accent);
+  background: transparent;
+  color: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .demo-badge > p {
+  font: 10px/1.4 var(--mono) !important;
+  color: var(--t-dim) !important;
+  margin-top: 6px;
+}
+
+/* ── Status strip: one dense row of key/value pairs ──────────────────── */
+
+.dashboard[data-skin="terminal"] .terminal-status-strip {
+  border: 1px solid var(--t-line);
+  background: var(--t-panel);
+  margin-bottom: 14px;
+}
+.dashboard[data-skin="terminal"] .terminal-status-strip > span {
+  font: 10px/1 var(--mono);
+  letter-spacing: 0.08em;
+  padding: 9px 13px;
+  color: var(--t-dim);
+  border-right: 1px solid var(--t-line-soft);
+}
+.dashboard[data-skin="terminal"] .terminal-status-strip b {
+  font: 600 11px/1 var(--mono);
+  color: var(--t-text);
+}
+
+/* ── Tabs ─────────────────────────────────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] .dashboard-toolbar {
+  border-bottom: 1px solid var(--t-line);
+  margin-bottom: 14px;
+}
+.dashboard[data-skin="terminal"] .dashboard-tabs [data-slot="tabs-trigger"] {
+  font: 11px/1 var(--mono) !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--t-dim) !important;
+  padding: 10px 14px;
+}
+.dashboard[data-skin="terminal"] .dashboard-tabs [data-state="active"] {
+  color: var(--t-accent) !important;
+  border-bottom-color: var(--t-accent) !important;
+}
+
+/* ── Panels ───────────────────────────────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] section,
+.dashboard[data-skin="terminal"] .vault-panel,
+.dashboard[data-skin="terminal"] .privacy-meter,
+.dashboard[data-skin="terminal"] .disclosure-panel {
+  background: var(--t-panel);
+  border: 1px solid var(--t-line);
+  border-radius: 0;
+}
+.dashboard[data-skin="terminal"] .panel-top {
+  border-bottom: 1px solid var(--t-line-soft);
+  padding-bottom: 9px;
+  margin-bottom: 11px;
+}
+.dashboard[data-skin="terminal"] .panel-top h2,
+.dashboard[data-skin="terminal"] section h2 {
+  font: 600 12px/1.2 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .eyebrow,
+.dashboard[data-skin="terminal"] .field-label {
+  font: 10px/1 var(--mono);
+  letter-spacing: 0.14em;
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .small-tag {
+  font: 10px/1 var(--mono);
+  letter-spacing: 0.1em;
+  border: 1px solid var(--t-line);
+  color: var(--t-dim);
+  padding: 4px 7px;
+}
+.dashboard[data-skin="terminal"] .ticket-note,
+.dashboard[data-skin="terminal"] .vault-copy {
+  font: 11px/1.5 var(--mono);
+  color: var(--t-dim);
+}
+
+/* ── Numbers: rows, not paragraphs ───────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] .guard-row,
+.dashboard[data-skin="terminal"] .vault-balances li {
+  border-bottom: 1px solid var(--t-line-soft);
+  padding: 7px 0;
+  font: 11px/1.3 var(--mono);
+}
+.dashboard[data-skin="terminal"] .guard-row span,
+.dashboard[data-skin="terminal"] .vault-balances li span {
+  color: var(--t-dim);
+  letter-spacing: 0.04em;
+}
+.dashboard[data-skin="terminal"] .guard-row b,
+.dashboard[data-skin="terminal"] .vault-balances li b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.dashboard[data-skin="terminal"] .vault-stats > div {
+  border: 1px solid var(--t-line-soft);
+  padding: 9px 11px;
+}
+.dashboard[data-skin="terminal"] .vault-stats span {
+  font: 10px/1 var(--mono);
+  letter-spacing: 0.12em;
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .vault-stats strong {
+  font: 600 14px/1.2 var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .holdings-table,
+.dashboard[data-skin="terminal"] table {
+  font: 11px/1.4 var(--mono);
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+  border-collapse: collapse;
+}
+.dashboard[data-skin="terminal"] th {
+  font: 10px/1 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--t-dim);
+  text-align: right;
+  padding: 6px 9px;
+  border-bottom: 1px solid var(--t-line);
+}
+.dashboard[data-skin="terminal"] th:first-child,
+.dashboard[data-skin="terminal"] td:first-child {
+  text-align: left;
+}
+.dashboard[data-skin="terminal"] td {
+  text-align: right;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--t-line-soft);
+}
+
+/* ── Controls ─────────────────────────────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] input,
+.dashboard[data-skin="terminal"] select,
+.dashboard[data-skin="terminal"] .asset-select {
+  font: 12px/1.3 var(--mono) !important;
+  font-variant-numeric: tabular-nums;
+  background: #0a0a14 !important;
+  border: 1px solid var(--t-line) !important;
+  border-radius: 0 !important;
+  color: var(--t-text) !important;
+  padding: 9px 11px !important;
+}
+.dashboard[data-skin="terminal"] input:focus,
+.dashboard[data-skin="terminal"] select:focus {
+  outline: 1px solid var(--t-accent);
+  outline-offset: -1px;
+}
+.dashboard[data-skin="terminal"] .seal-order-button {
+  font: 600 11px/1 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 0;
+  background: var(--t-accent);
+  color: #04040a;
+  border: 1px solid var(--t-accent);
+  padding: 11px 16px;
+}
+.dashboard[data-skin="terminal"] .seal-order-button:hover:not(:disabled) {
+  background: #5cf0ff;
+}
+.dashboard[data-skin="terminal"] .seal-order-button:disabled {
+  background: transparent;
+  color: var(--t-dim);
+  border-color: var(--t-line);
+}
+.dashboard[data-skin="terminal"] .reset-demo {
+  font: 10px/1 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--t-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--t-dim);
+  padding: 8px 11px;
+}
+.dashboard[data-skin="terminal"] .reset-demo:hover {
+  color: var(--t-accent);
+  border-color: var(--t-accent);
+}
+
+/* ── State colours ───────────────────────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] .guard-result {
+  font: 11px/1.5 var(--mono);
+  color: var(--t-dim);
+  border-left: 2px solid var(--t-line);
+  padding: 8px 0 8px 10px;
+  margin-top: 12px;
+}
+.dashboard[data-skin="terminal"] .guard-result.deferred {
+  color: var(--t-warn);
+  border-left-color: var(--t-warn);
+}
+.dashboard[data-skin="terminal"] .ticket-error {
+  font: 11px/1.5 var(--mono);
+  color: var(--t-bad);
+}
+.dashboard[data-skin="terminal"] .cyan-text {
+  color: var(--t-good);
+}
+.dashboard[data-skin="terminal"] .rose-text {
+  color: var(--t-bad);
+}
+.dashboard[data-skin="terminal"] .price-freshness {
+  font: 10px/1.4 var(--mono);
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .price-freshness.is-stale {
+  color: var(--t-warn);
+}
+
+/* ── Privacy meter ───────────────────────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] .privacy-headline {
+  font: 11px/1.5 var(--mono);
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .privacy-set b {
+  font: 600 18px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.dashboard[data-skin="terminal"] .privacy-set small,
+.dashboard[data-skin="terminal"] .privacy-toggle {
+  font: 10px/1.3 var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .privacy-meter.is-none .privacy-top strong,
+.dashboard[data-skin="terminal"] .privacy-meter.is-minimal .privacy-top strong {
+  color: var(--t-bad);
+}
+.dashboard[data-skin="terminal"] .privacy-meter.is-weak .privacy-top strong {
+  color: var(--t-warn);
+}
+.dashboard[data-skin="terminal"] .privacy-meter.is-moderate .privacy-top strong,
+.dashboard[data-skin="terminal"] .privacy-meter.is-meaningful .privacy-top strong {
+  color: var(--t-good);
+}
+.dashboard[data-skin="terminal"] .privacy-top strong {
+  font: 600 13px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Chart ───────────────────────────────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] .chart-scale span,
+.dashboard[data-skin="terminal"] .chart-axis span {
+  font: 10px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .chart-readout b {
+  font: 600 12px/1.2 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.dashboard[data-skin="terminal"] .chart-readout small {
+  font: 10px/1.2 var(--mono);
+}
+
+/* ── Density on small screens ────────────────────────────────────────── */
+
+@media (max-width: 760px) {
+  .dashboard[data-skin="terminal"] .dashboard-shell {
+    width: 94%;
+    padding-top: 70px;
+  }
+  .dashboard[data-skin="terminal"] .dashboard-title {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .dashboard[data-skin="terminal"] .terminal-status-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Inherited light-theme colours ───────────────────────────────────────
+ * `editorial.css` sets explicit near-black text on many of these (`#080842`, `#565375`,
+ * `#4d496a`). An explicit colour wins over an inherited one, so the skin's `color` on the root
+ * reaches none of them and they render as dark purple on near-black — invisible. Each family is
+ * overridden by name rather than with one blanket `*` rule, so a future element that *should*
+ * carry its own colour still can. */
+
+.dashboard[data-skin="terminal"] .price-details {
+  border-color: var(--t-line);
+}
+.dashboard[data-skin="terminal"] .price-details span {
+  color: var(--t-dim);
+  font: 10px/1 var(--mono);
+  letter-spacing: 0.12em;
+}
+.dashboard[data-skin="terminal"] .price-details strong {
+  color: var(--t-text);
+  font: 600 13px/1.2 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.dashboard[data-skin="terminal"] .price-details .cyan-text {
+  color: var(--t-good);
+}
+.dashboard[data-skin="terminal"] .price-details .rose-text {
+  color: var(--t-bad);
+}
+
+.dashboard[data-skin="terminal"] .guard-reasons li {
+  border: 1px solid var(--t-line-soft);
+  background: #0a0a14;
+}
+.dashboard[data-skin="terminal"] .guard-reasons b {
+  color: var(--t-warn);
+  font: 600 11px/1.4 var(--mono);
+  letter-spacing: 0.04em;
+}
+.dashboard[data-skin="terminal"] .guard-reasons span {
+  color: var(--t-dim);
+  font: 11px/1.55 var(--mono);
+}
+
+/* The window ritual: the venue clock, and the one thing on the page that is always moving. */
+.dashboard[data-skin="terminal"] .window-ritual {
+  border: 1px solid var(--t-line);
+  background: #0a0a14;
+}
+.dashboard[data-skin="terminal"] .window-ritual > header strong {
+  color: var(--t-dim);
+  font-family: var(--mono);
+}
+.dashboard[data-skin="terminal"] .window-ritual > header strong b {
+  color: var(--t-accent);
+  font-family: var(--mono);
+}
+.dashboard[data-skin="terminal"] .window-ritual.is-waiting p,
+.dashboard[data-skin="terminal"] .ritual-caption,
+.dashboard[data-skin="terminal"] .ritual-previous {
+  color: var(--t-dim);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.dashboard[data-skin="terminal"] .ritual-previous {
+  border-top-color: var(--t-line-soft);
+}
+.dashboard[data-skin="terminal"] .ritual-stage {
+  color: #4e5c72;
+}
+.dashboard[data-skin="terminal"] .ritual-stage span {
+  background: #0a0a14;
+  border-color: var(--t-line);
+  font-family: var(--mono);
+}
+.dashboard[data-skin="terminal"] .ritual-stage b {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.dashboard[data-skin="terminal"] .ritual-stage.is-done {
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .ritual-stage.is-done span {
+  background: var(--t-line);
+  border-color: var(--t-line);
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .ritual-stage.is-now {
+  color: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .ritual-stage.is-now span {
+  background: var(--t-accent);
+  border-color: var(--t-accent);
+  color: #04040a;
+  box-shadow: 0 0 0 3px #00e5ff26;
+}
+.dashboard[data-skin="terminal"] .ritual-progress {
+  background: var(--t-line-soft);
+}
+.dashboard[data-skin="terminal"] .ritual-progress i {
+  background: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .ritual-count,
+.dashboard[data-skin="terminal"] .ritual-count b {
+  color: var(--t-text);
+  font-family: var(--mono);
+}
+
+/* Range buttons on the chart. */
+.dashboard[data-skin="terminal"] .chart-ranges button {
+  font: 10px/1 var(--mono);
+  letter-spacing: 0.08em;
+  border: 1px solid var(--t-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--t-dim);
+  padding: 5px 9px;
+}
+.dashboard[data-skin="terminal"] .chart-ranges button.selected {
+  background: var(--t-accent);
+  border-color: var(--t-accent);
+  color: #04040a;
+}
+
+/* ── The site chrome, while a terminal is on screen ──────────────────────
+ * The header and the sound toggle are rendered by the root layout, outside `.dashboard`, so no
+ * descendant selector reaches them. `:has()` lets the skin travel up to the page without the
+ * layout needing to know which route it is on — and it still costs nothing on every other page,
+ * where the attribute is absent. */
+
+:root:has(main[data-skin="terminal"]) {
+  background: #07070f;
+}
+:root:has(main[data-skin="terminal"]) .site-header {
+  background: #07070fee;
+  border-bottom: 1px solid #1e2740;
+  backdrop-filter: blur(6px);
+}
+/* The header carries `data-tone="light"` over this page (see `chrome.tsx`), which already gives
+ * it legible colours on a dark ground. All that is left is the type and the halo, which is tuned
+ * for a photographic hero rather than a flat panel. */
+:root:has(main[data-skin="terminal"]) .site-header {
+  --nav-halo: transparent;
+}
+:root:has(main[data-skin="terminal"]) .site-header nav a,
+:root:has(main[data-skin="terminal"]) .site-header nav button {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px !important;
+  letter-spacing: 0.12em;
+}
+:root:has(main[data-skin="terminal"]) .sound-control {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  background: #0c0c18;
+  border: 1px solid #1e2740;
+  border-radius: 0;
+  color: #74849a;
+}
+
+/* ── Chart ink ───────────────────────────────────────────────────────────
+ * The polyline's `stroke` is a presentation attribute on the SVG, which any CSS declaration
+ * outranks — so the skin can recolour the line without the chart component knowing a skin
+ * exists. Navy on near-black was the one genuinely unreadable thing left. */
+
+.dashboard[data-skin="terminal"] .market-chart polyline {
+  stroke: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .market-chart line {
+  stroke: #ffffff12;
+}
+.dashboard[data-skin="terminal"] .chart-crosshair {
+  background: #ffffff33;
+}
+.dashboard[data-skin="terminal"] .chart-dot {
+  background: var(--t-accent);
+  box-shadow: 0 0 0 3px #00e5ff33;
+}
+.dashboard[data-skin="terminal"] .chart-readout {
+  background: #0c0c18;
+  border: 1px solid var(--t-line);
+  border-radius: 0;
+  color: var(--t-text);
+}
+
+/* ── Wallet ──────────────────────────────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] .access-button {
+  font: 600 11px/1 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--t-accent);
+  background: transparent;
+  color: var(--t-accent);
+  border-radius: 0;
+  padding: 11px 15px;
+}
+.dashboard[data-skin="terminal"] .access-button:hover {
+  background: var(--t-accent);
+  color: #04040a;
+}
+.dashboard[data-skin="terminal"] .wallet-chip {
+  font: 11px/1 var(--mono);
+  border: 1px solid var(--t-line);
+  border-radius: 0;
+  background: #0a0a14;
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .wallet-menu {
+  background: #0c0c18;
+  border: 1px solid var(--t-line);
+  border-radius: 0;
+  font-family: var(--mono);
+}
+.dashboard[data-skin="terminal"] .wallet-note,
+.dashboard[data-skin="terminal"] .wallet-error {
+  font: 11px/1.5 var(--mono);
+}
+:root:has(main[data-skin="terminal"]) .sound-control .sound-label {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #74849a;
+}
+
+/* ── Proofs ──────────────────────────────────────────────────────────────
+ * With the engraved plate hidden, the accountability panel is a heading and a line of copy but
+ * still stretches to the height of the solvency record beside it, leaving a large empty box.
+ * Letting the row's items size to their own content is the fix; the copy stays. */
+
+/* The grid already sizes to content; the height was the panel's own 45px of vertical padding,
+ * which framed an engraving that is no longer there. */
+.dashboard[data-skin="terminal"] .proof-orbit-panel {
+  padding: 18px 20px;
+  text-align: left;
+}
+.dashboard[data-skin="terminal"] .proof-orbit-panel h2 {
+  font: 600 12px/1.5 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.dashboard[data-skin="terminal"] .proof-orbit-panel h2 em {
+  font-style: normal;
+  color: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .proof-orbit-panel p {
+  font: 11px/1.6 var(--mono);
+  color: var(--t-dim);
+}

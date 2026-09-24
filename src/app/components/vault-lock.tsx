@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { LockKeyhole, Unlock } from "lucide-react";
 import { useVault } from "./vault-provider";
+import { Detail } from "./panel-detail";
 import { useT } from "../lib/i18n";
 
 /**
@@ -82,11 +83,13 @@ export function VaultLock() {
         </button>
       </span>
 
-      <p className="ticket-note">
-        {t(
-          "Locking destroys the worker that holds your keys rather than hiding a balance — they are gone from this page until you sign again. The timer counts what you do, not what the page does: polling the venue does not keep it open.",
-        )}
-      </p>
+      <Detail label={t("What locking actually does")}>
+        <p>
+          {t(
+            "Locking destroys the worker that holds your keys rather than hiding a balance — they are gone from this page until you sign again. The timer counts what you do, not what the page does: polling the venue does not keep it open.",
+          )}
+        </p>
+      </Detail>
     </div>
   );
 }

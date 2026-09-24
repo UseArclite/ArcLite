@@ -32,6 +32,7 @@ import { SolvencyRecord } from "../components/solvency-panel";
 import { ReceiptsPanel } from "../components/receipts-panel";
 import { SealedOrderPanel } from "../components/sealed-order-panel";
 import { ShieldCheck, Info } from "lucide-react";
+import { Detail } from "../components/panel-detail";
 import { useT } from "../lib/i18n";
 
 /**
@@ -183,7 +184,15 @@ export default function Dashboard() {
   const freshness = describeFreshness(meta?.priceAgeSeconds, market.session);
 
   return (
-    <main data-route="/dashboard" className="dashboard" id="top">
+    <main
+      data-route="/dashboard"
+      className="dashboard"
+      // The whole skin hangs off this one attribute, so the flag is a real off switch: with
+      // it absent not a single rule in `terminal.css` matches and the editorial dashboard
+      // renders exactly as it did.
+      data-skin={feature("terminal") ? "terminal" : undefined}
+      id="top"
+    >
       {/* Mounted for the whole dashboard, not inside a tab: an outcome that only arrives while
           the Proofs tab happens to be open is one nobody sees. It shares the receipts panel's
           query key, so the two dedupe rather than polling the venue twice. */}
@@ -427,10 +436,6 @@ export default function Dashboard() {
                   <h2>Guard {asset}</h2>
                   <ShieldCheck size={19} />
                 </div>
-                <p>
-                  Guards are read from Robinhood Chain, not set here. They defer {asset} alone —
-                  every other asset keeps crossing.
-                </p>
                 <div className="guard-row">
                   <span>{t("Reference freshness")}</span>
                   <b className={guard ? "rose-text" : "cyan-text"}>
@@ -473,6 +478,13 @@ export default function Dashboard() {
                     {market.detail[asset] ?? (blocked ? "Asset deferred." : "Reference accepted.")}
                   </span>
                 </div>
+                <Detail label={t("What a guard is")}>
+                  <p>
+                    {t(
+                      "Guards are read from Robinhood Chain, not set here. They defer one asset alone — every other asset keeps crossing.",
+                    )}
+                  </p>
+                </Detail>
               </section>
             </div>
           </TabsContent>
@@ -480,19 +492,13 @@ export default function Dashboard() {
             {/* Above the balance, because it changes what the balance means. */}
             {feature("privacy-meter") && <PrivacyMeter />}
             <VaultPanel />
-            <section className="portfolio-view" style={{ minHeight: "auto", marginTop: 20 }}>
-              <div className="portfolio-note" style={{ marginTop: 0 }}>
-                <ShieldCheck />
-                <div>
-                  <h3>{t("Value moves. Units stay yours.")}</h3>
-                  <p>
-                    {t(
-                      "A note holds raw units. A reference price changes what those units are worth, not how many you have. Returns are not fixed or guaranteed.",
-                    )}
-                  </p>
-                </div>
-              </div>
-            </section>
+            <Detail label={t("Value moves. Units stay yours.")}>
+              <p>
+                {t(
+                  "A note holds raw units. A reference price changes what those units are worth, not how many you have. Returns are not fixed or guaranteed.",
+                )}
+              </p>
+            </Detail>
           </TabsContent>
           <TabsContent value="proofs">
             <div className="proofs-grid">
@@ -528,11 +534,13 @@ export default function Dashboard() {
                   <span className="small-tag">{t("LIVE")}</span>
                 </div>
                 <SolvencyRecord />
-                <p className="ticket-note">
-                  {t(
-                    "Solvency is read live from Robinhood Chain and is a check anyone can repeat, not a proof we produced — crossing moves no tokens, so the pool’s obligations change only on deposit and withdrawal. The contracts are unaudited.",
-                  )}
-                </p>
+                <Detail label={t("What this check is, and is not")}>
+                  <p>
+                    {t(
+                      "Solvency is read live from Robinhood Chain and is a check anyone can repeat, not a proof we produced — crossing moves no tokens, so the pool’s obligations change only on deposit and withdrawal. The contracts are unaudited.",
+                    )}
+                  </p>
+                </Detail>
                 <ReceiptsPanel />
                 {feature("disclosure") && <DisclosurePanel />}
               </section>

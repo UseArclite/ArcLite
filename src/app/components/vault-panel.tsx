@@ -20,6 +20,7 @@ import { feature } from "../lib/features";
 import { AmountField } from "./amount-field";
 import { displayAmount, formatAmount, parseAmount } from "../lib/units";
 import { assessWithdrawal } from "../lib/withdraw-privacy";
+import { Detail } from "./panel-detail";
 import { useT } from "../lib/i18n";
 
 /**
@@ -49,9 +50,7 @@ export function VaultPanel() {
       {vault.status !== "unlocked" ? (
         <>
           <p className="vault-copy">
-            {t(
-              "Your shielded balance is computed in your browser, from keys derived from a signature. Nothing here is sent to a server: the vault reads the public commitment set and works out which notes are yours locally, so no one — us included — learns which leaves you asked about.",
-            )}
+            {t("Your balance is computed here, in your browser. Nothing is sent to a server.")}
           </p>
           <button
             className="seal-order-button"
@@ -68,6 +67,13 @@ export function VaultPanel() {
           <p className="ticket-note">
             {t("Signing derives your viewing keys. It approves no transaction and moves no funds.")}
           </p>
+          <Detail label={t("What the vault does")}>
+            <p>
+              {t(
+                "Your keys are derived from a signature and held in a Web Worker, never on a server and never in storage. The vault reads the public commitment set and works out which notes are yours locally, so no one — us included — learns which leaves you asked about.",
+              )}
+            </p>
+          </Detail>
         </>
       ) : (
         <>
@@ -349,13 +355,23 @@ function Withdraw() {
           {vault.withdrawing ? "Proving…" : "Withdraw to my wallet"}
         </button>
       </div>
-      <p className="ticket-note">
-        The proof is generated here, in your browser, from keys that never leave it. Withdrawal
-        needs no operator: the pool accepts a valid proof from anyone, with no pause, no role and no
-        window check.
-        {vault.legacyNotes.length > 0 &&
-          " Notes marked as a retired pool predate a redeploy — still yours, still withdrawable, but not tradable."}
-      </p>
+      {vault.legacyNotes.length > 0 && (
+        <div className="guard-result" role="note">
+          <ShieldCheck size={16} />
+          <span>
+            {t(
+              "Notes marked as a retired pool predate a redeploy — still yours, still withdrawable, but not tradable.",
+            )}
+          </span>
+        </div>
+      )}
+      <Detail label={t("About withdrawals")}>
+        <p>
+          {t(
+            "The proof is generated here, in your browser, from keys that never leave it. Withdrawal needs no operator: the pool accepts a valid proof from anyone, with no pause, no role and no window check.",
+          )}
+        </p>
+      </Detail>
       {message && (
         <p role="status" className={message.ok ? "ticket-note" : "ticket-error"}>
           {message.text}
@@ -591,11 +607,6 @@ function Recover() {
 
   return (
     <div className="vault-recover">
-      <p className="ticket-note">
-        {t(
-          "Your notes are found using records this browser keeps. The chain holds everything needed to rebuild those records — a deposit is a public transfer, so it knows the asset, the amount and who sent it, and your signature supplies the rest.",
-        )}
-      </p>
       <div className="vault-deposit-actions">
         <button
           className="seal-order-button"
@@ -614,13 +625,18 @@ function Recover() {
           {said.text}
         </p>
       )}
-      {!said && (
-        <p className="ticket-note">
+      <Detail label={t("Why this exists")}>
+        <p>
+          {t(
+            "Your notes are found using records this browser keeps. The chain holds everything needed to rebuild those records — a deposit is a public transfer, so it knows the asset, the amount and who sent it, and your signature supplies the rest.",
+          )}
+        </p>
+        <p>
           {t(
             "Testing changes nothing. It runs the real recovery and reports what would have come back — which is worth knowing now rather than on the day a browser is cleared.",
           )}
         </p>
-      )}
+      </Detail>
     </div>
   );
 }

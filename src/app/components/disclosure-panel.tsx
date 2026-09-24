@@ -6,6 +6,7 @@ import { Copy, ExternalLink, Eye, FileSignature, ShieldCheck } from "lucide-reac
 import { CHAINS, clientChainId, clientDeployment, readClient } from "@/lib/chain/chains";
 import { useVault } from "./vault-provider";
 import { useWindow } from "./market-provider";
+import { Detail } from "./panel-detail";
 import { useT } from "../lib/i18n";
 
 /**
@@ -186,9 +187,7 @@ export function DisclosurePanel() {
     <div className="disclosure-panel">
       <span className="eyebrow">{t("CONTROLLED DISCLOSURE")}</span>
       <p className="ticket-note">
-        {t(
-          "A grant hands over one epoch's viewing key. It reconstructs that epoch's notes and no others, because every note's randomness derives from the epoch key rather than your master key — so the scope is the key itself, not a setting anyone can change afterwards.",
-        )}
+        {t("A grant hands over one epoch's viewing key, and nothing else of yours.")}
       </p>
 
       <div className="sealed-order-fields">
@@ -295,11 +294,18 @@ export function DisclosurePanel() {
         </span>
       </div>
 
-      <p className="ticket-note">
-        {t(
-          "Revocation is forward-only, wherever it is recorded. An auditor who has opened an epoch keeps what they learned — what a revocation changes is that the grant stops reading as current.",
-        )}
-      </p>
+      <Detail label={t("How scoping and revocation work")}>
+        <p>
+          {t(
+            "A grant hands over one epoch's viewing key. It reconstructs that epoch's notes and no others, because every note's randomness derives from the epoch key rather than your master key — so the scope is the key itself, not a setting anyone can change afterwards.",
+          )}
+        </p>
+        <p>
+          {t(
+            "Revocation is forward-only, wherever it is recorded. An auditor who has opened an epoch keeps what they learned — what a revocation changes is that the grant stops reading as current.",
+          )}
+        </p>
+      </Detail>
     </div>
   );
 }

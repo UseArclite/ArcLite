@@ -12,6 +12,9 @@ import { RouteTransition } from "../app/components/route-transition";
 import globalStyles from "../app/globals.css?url";
 import editorialStyles from "../app/editorial.css?url";
 import interactiveStyles from "../app/interactive.css?url";
+// Loaded globally but inert: every rule in it is scoped to `.dashboard[data-skin="terminal"]`,
+// except the `<Detail>` disclosure, which both skins use.
+import terminalStyles from "../app/terminal.css?url";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -29,7 +32,7 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: "icon", type: "image/png", href: "/favicon.png?v=3" },
-      ...[globalStyles, editorialStyles, interactiveStyles].map((href) => ({
+      ...[globalStyles, editorialStyles, interactiveStyles, terminalStyles].map((href) => ({
         rel: "stylesheet",
         href,
       })),

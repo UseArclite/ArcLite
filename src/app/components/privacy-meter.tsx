@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Check, ChevronDown, Minus } from "lucide-react";
 import { useVault } from "./vault-provider";
 import { assessPrivacy, LEVEL_LABEL } from "../lib/privacy";
+import { Detail } from "./panel-detail";
 import { useT } from "../lib/i18n";
 
 /**
@@ -71,11 +72,13 @@ export function PrivacyMeter() {
         </ul>
       )}
 
-      <p className="ticket-note">
-        {t(
-          "Measured from this pool's commitment tree, which anyone can read. Two of these limits do not improve with scale, so there is no rating above “meaningful” here.",
-        )}
-      </p>
+      <Detail label={t("How this is measured")}>
+        <p>
+          {t(
+            "Measured from this pool's commitment tree, which anyone can read. Two of these limits do not improve with scale, so there is no rating above “meaningful” here.",
+          )}
+        </p>
+      </Detail>
     </section>
   );
 }

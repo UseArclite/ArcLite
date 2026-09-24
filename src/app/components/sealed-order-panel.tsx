@@ -9,6 +9,7 @@ import { cash } from "../lib/format";
 import { feature } from "../lib/features";
 import { AmountField } from "./amount-field";
 import { displayAmount } from "../lib/units";
+import { Detail } from "./panel-detail";
 import { useT } from "../lib/i18n";
 
 /**
@@ -108,12 +109,6 @@ export function SealedOrderPanel() {
         </div>
         <LockKeyhole size={19} />
       </div>
-
-      <p className="ticket-note">
-        {t(
-          "Built and encrypted inside your vault, so the order never exists in plaintext outside it. No cookie is sent with it — nothing links this order to your wallet address in our logs.",
-        )}
-      </p>
 
       <div className="sealed-order-fields">
         <label>
@@ -222,6 +217,14 @@ export function SealedOrderPanel() {
           ? "Orders cross at the reference the contract commits after the book closes, not at the price shown now."
           : "Reference prices are still loading."}
       </p>
+
+      <Detail label={t("How sealing works")}>
+        <p>
+          {t(
+            "Built and encrypted inside your vault, so the order never exists in plaintext outside it. No cookie is sent with it — nothing links this order to your wallet address in our logs.",
+          )}
+        </p>
+      </Detail>
     </section>
   );
 }

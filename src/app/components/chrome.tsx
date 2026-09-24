@@ -104,10 +104,15 @@ export function Header() {
         const header = document.querySelector(".reference-header");
         const y = header ? header.getBoundingClientRect().height / 2 : 40;
         setOverDark(
-          [...document.querySelectorAll(".hero,.site-footer")].some((el) => {
-            const r = el.getBoundingClientRect();
-            return r.top <= y && r.bottom > y;
-          }),
+          // The terminal-skinned dashboard is a dark page, so the header sits over dark for its
+          // whole height. Naming it here rather than overriding colours in the skin means the
+          // existing light-tone treatment — including the inverted wordmark — just applies.
+          [...document.querySelectorAll('.hero,.site-footer,main[data-skin="terminal"]')].some(
+            (el) => {
+              const r = el.getBoundingClientRect();
+              return r.top <= y && r.bottom > y;
+            },
+          ),
         );
       });
     };

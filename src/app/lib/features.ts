@@ -49,7 +49,9 @@ export type Feature =
   /** #26 — Idle auto-lock, and saying what locking actually does. */
   | "vault-lock"
   /** #27 — How linkable a withdrawal would be to the deposit that funded it. */
-  | "withdraw-timing";
+  | "withdraw-timing"
+  /** #36 — The dashboard as a terminal: dense, monospace, explanation folded away. */
+  | "terminal";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be
