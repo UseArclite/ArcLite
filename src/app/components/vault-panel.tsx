@@ -13,6 +13,7 @@ import { useAccount, useWriteContract } from "wagmi";
 import { erc20Abi, useVault, type VaultNote } from "./vault-provider";
 import { Holdings } from "./holdings";
 import { TransactionTrail } from "./transaction-trail";
+import { VaultLock } from "./vault-lock";
 import { feature } from "../lib/features";
 import { AmountField } from "./amount-field";
 import { displayAmount, formatAmount, parseAmount } from "../lib/units";
@@ -142,9 +143,13 @@ export function VaultPanel() {
 
           <Recover />
 
-          <button className="reset-demo" onClick={vault.lock}>
-            <LockKeyhole size={14} /> {t("Lock vault")}
-          </button>
+          {feature("vault-lock") ? (
+            <VaultLock />
+          ) : (
+            <button className="reset-demo" onClick={vault.lock}>
+              <LockKeyhole size={14} /> {t("Lock vault")}
+            </button>
+          )}
         </>
       )}
 

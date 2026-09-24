@@ -472,6 +472,14 @@ export const zh: Record<string, string> = {
   "Settled on chain": "已在链上结算",
   "PRIVACY, RIGHT NOW": "当前隐私状况",
   "CONTROLLED DISCLOSURE": "受控披露",
+  "Vault open": "保险库已打开",
+  "locks in": "将于",
+  "no automatic lock": "未设置自动锁定",
+  "Lock after": "闲置多久后锁定",
+  "Lock now": "立即锁定",
+  Never: "永不",
+  "Locking destroys the worker that holds your keys rather than hiding a balance — they are gone from this page until you sign again. The timer counts what you do, not what the page does: polling the venue does not keep it open.":
+    "锁定会销毁持有你密钥的 worker，而不只是把余额藏起来 —— 在你再次签名之前，密钥已从本页面消失。计时只统计你的操作，而非页面自身的动作：轮询交易场所不会让它保持打开。",
   "Open your vault to grant an auditor a scoped view of one epoch.":
     "打开你的保险库，即可授予审计方对某一纪元的受限查看权限。",
   "Auditor's public key": "审计方公钥",

@@ -45,7 +45,9 @@ export type Feature =
   /** #16 — A price scale and a hover readout on the reference chart. */
   | "chart-scale"
   /** #25 — Seal one epoch's viewing key to an auditor. */
-  | "disclosure";
+  | "disclosure"
+  /** #26 — Idle auto-lock, and saying what locking actually does. */
+  | "vault-lock";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be

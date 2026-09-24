@@ -181,6 +181,11 @@ export interface VaultValue {
   ) => Promise<{ ok: boolean; sealed?: string; reason?: string }>;
   /** True only on testnet, where the tokens have an open faucet and no issuer to ask. */
   faucetAvailable: boolean;
+  /** Minutes of no interaction before the vault locks itself. Zero disables it. */
+  idleMinutes: number;
+  setIdleMinutes: (minutes: number) => void;
+  /** When the vault will lock if untouched, as epoch ms. Null when locked or disabled. */
+  locksAt: number | null;
   /** Size of the whole commitment set — the anonymity set this vault hides in. */
   leafCount: number;
   /**
@@ -556,6 +561,38 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     [ensureWorker],
   );
 
+  /**
+   * How long an unlocked vault stays unlocked with nobody touching it.
+   *
+   * Held here rather than in the panel so the timer survives a tab change — the dashboard
+   * unmounts the Portfolio view when you look at the market, and a countdown owned by that view
+   * would reset every time somebody checked a price, which is the opposite of what an idle
+   * timeout is for.
+   *
+   * Persisted per browser rather than per vault: the setting is about the machine you are
+   * sitting at, and the vault it protects is the one you have not opened yet.
+   */
+  const [idleMinutes, setIdleMinutesState] = useState(15);
+  const [locksAt, setLocksAt] = useState<number | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = Number(localStorage.getItem("arclite-idle-lock-minutes"));
+      if (Number.isFinite(stored) && stored >= 0) setIdleMinutesState(stored);
+    } catch {
+      // Blocked storage. Fifteen minutes is a working default, not a failure.
+    }
+  }, []);
+
+  const setIdleMinutes = useCallback((minutes: number) => {
+    setIdleMinutesState(minutes);
+    try {
+      localStorage.setItem("arclite-idle-lock-minutes", String(minutes));
+    } catch {
+      /* the choice holds for this session either way */
+    }
+  }, []);
+
   const lock = useCallback(() => {
     // Terminate rather than only sending `lock`: destroying the worker discards its heap, which
     // is the one thing that reliably removes the key material from the process.
@@ -569,6 +606,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     setNoteCount(0);
     setNotes([]);
     setError(null);
+    setLocksAt(null);
   }, []);
 
   /**
@@ -855,6 +893,59 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     const timer = setTimeout(() => void scan(), 5_000);
     return () => clearTimeout(timer);
   }, [spentUnknown, status, scan]);
+
+  /**
+   * Lock an untouched vault.
+   *
+   * The worker holds the keys and `lock()` terminates it, which is the one thing that reliably
+   * removes them from the process — a good property nobody was told about, attached to a vault
+   * that stayed open forever. On a shared machine that is the whole exposure.
+   *
+   * Activity is anything the person does, not anything the app does. Polling the venue, scanning
+   * the tree and refreshing the market all happen on their own every few seconds; counting those
+   * would mean the timer never fires and the setting is decoration.
+   *
+   * `visibilitychange` is deliberately *not* treated as activity either. Coming back to a tab
+   * after an hour is exactly when the vault should have locked.
+   *
+   * Zero disables it, for somebody on a machine only they use who would rather not re-sign.
+   */
+  useEffect(() => {
+    if (status !== "unlocked" || idleMinutes <= 0) {
+      setLocksAt(null);
+      return;
+    }
+    const window_ = globalThis as unknown as Window;
+    const span = idleMinutes * 60_000;
+    let deadline = Date.now() + span;
+    setLocksAt(deadline);
+
+    // The deadline moves on every event; the *state* moves rarely. `wheel` fires dozens of times
+    // in a single scroll, and setting provider state on each one would re-render the vault, the
+    // holdings and the order panel while somebody is simply reading the page.
+    let published = deadline;
+    const touched = () => {
+      deadline = Date.now() + span;
+      if (deadline - published >= 5_000) {
+        published = deadline;
+        setLocksAt(deadline);
+      }
+    };
+    // `pointerdown` and `keydown` rather than `pointermove`: a cursor crossing the window while
+    // somebody reads on another screen is not use, and treating it as such is how an idle lock
+    // quietly never fires.
+    const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+    for (const e of events) window_.addEventListener(e, touched, { passive: true });
+
+    const timer = setInterval(() => {
+      if (Date.now() >= deadline) lock();
+    }, 1_000);
+
+    return () => {
+      for (const e of events) window_.removeEventListener(e, touched);
+      clearInterval(timer);
+    };
+  }, [status, idleMinutes, lock]);
 
   // Disconnecting or switching account must close the vault. Leaving it open would show one
   // account's balance while the wallet is pointed at another — the worst kind of wrong number.
@@ -1258,6 +1349,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         transactions,
         spentUnknown,
         faucetAvailable: clientChainId() === 46630,
+        idleMinutes,
+        setIdleMinutes,
+        locksAt,
       }}
     >
       {children}

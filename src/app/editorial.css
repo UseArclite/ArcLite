@@ -312,3 +312,18 @@ html{scroll-padding-top:95px}
 .disclosure-sealed code{display:block;font:10px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#4d496a;word-break:break-all;max-height:64px;overflow-y:auto;background:#faf8fb;border:1px solid #08084218;padding:8px}
 .disclosure-sealed .reset-demo{margin-top:9px;display:inline-flex;align-items:center;gap:6px}
 .disclosure-panel .guard-result{margin-top:14px}
+
+/* #26 — the vault's lock state. Sits where the bare "Lock vault" button was,
+   because the countdown is the thing somebody leaving a laptop open needs to
+   see, not a control they have to go looking for. */
+.vault-lock{margin-top:18px;padding-top:16px;border-top:1px solid #08084222;display:grid;gap:10px}
+.vault-lock-state{display:flex;align-items:center;gap:8px;color:#00719a}
+.vault-lock-state b{font:600 12px/1 var(--sans);color:#080842}
+.vault-lock-state small{font:11px/1 var(--sans);color:#4d496a}
+.vault-lock-state small b{font-variant-numeric:tabular-nums;color:#080842}
+.vault-lock.is-soon .vault-lock-state{color:#b02348}
+.vault-lock.is-soon .vault-lock-state small b{color:#b02348}
+.vault-lock-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.vault-lock-controls select{border:1px solid #08084244;background:#faf8fb;color:#080842;font:11px/1 var(--sans);padding:7px 8px}
+.vault-lock-controls .reset-demo{display:inline-flex;align-items:center;gap:6px}
+.vault-lock .ticket-note{margin:0;max-width:62ch}
