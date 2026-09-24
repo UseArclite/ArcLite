@@ -89,7 +89,7 @@ export const ARCLITE = {
     eligibleRegistry: "0x9c4004d59f97b7993D621D867262f91745C594C7",
     eventCalendar: "0x336F7b0A26845Fb7Cd479A3e0C14A90Fa309AE5F",
     priceCommitter: "0xcB0165Ac908B4758C2790BC2DeB59ECa20b432F6",
-    pool: "0xE14B341d854354C767abdb634fC7B85652018222",
+    pool: "0x3435494d626091642e170AD1B0f48c9eD8c899aa",
     /**
      * These are not typos and not copied from the testnet block below.
      *
@@ -119,7 +119,13 @@ export const ARCLITE = {
     /** Not deployed on mainnet yet — the tape and disclosure lanes are Phase 5. */
     tapeRegistry: null,
     disclosureRegistry: null,
-    deployBlock: 70575648,
+    /**
+     * The **pool's** block, not the registry's. The tree belongs to the pool, so scanning from
+     * before it existed only reads leaves of a pool whose notes these are not. Raised with each
+     * pool; the retired ones are scanned from zero instead, because their own deploy blocks are
+     * not recorded and the current one starts after them.
+     */
+    deployBlock: 71095650,
     /**
      * The asset a buy is funded with and a sell is paid in, as the registry numbers it.
      *
@@ -144,7 +150,15 @@ export const ARCLITE = {
      * committer's multiplier guard — which deferred 13 of 35 assets forever — meant a new pool
      * rather than an upgrade.
      */
-    retiredPools: ["0x16B2578e48b835F7C04F8a68Ce88D07a798e58b2"] as readonly `0x${string}`[],
+    retiredPools: [
+      // v2. Replaced 2026-09-24 because RwaDarkPool's own code changed and it is immutable by
+      // design: withdrawal verification could be switched off by governance, published output
+      // commitments were not bound to the root the proof committed, and a queued deposit past
+      // the 32nd had no way into the tree without the venue settling a window.
+      "0xE14B341d854354C767abdb634fC7B85652018222",
+      // v1. Replaced when the price committer's multiplier guard was corrected.
+      "0x16B2578e48b835F7C04F8a68Ce88D07a798e58b2",
+    ] as readonly `0x${string}`[],
   },
   46630: {
     eligibleRegistry: "0x9c4004d59f97b7993D621D867262f91745C594C7",

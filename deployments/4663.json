@@ -11,13 +11,14 @@
     "EligibleRegistry": "0x9c4004d59f97b7993D621D867262f91745C594C7",
     "EventCalendar": "0x336F7b0A26845Fb7Cd479A3e0C14A90Fa309AE5F",
     "PriceCommitter": "0xcB0165Ac908B4758C2790BC2DeB59ECa20b432F6",
-    "RwaDarkPool": "0xE14B341d854354C767abdb634fC7B85652018222",
+    "RwaDarkPool": "0x3435494d626091642e170AD1B0f48c9eD8c899aa",
     "ScreeningVerifier": "0x59fF64533400A6605CCdA9Dd10d5AC1E5FF3Cc15",
     "UnshieldVerifier": "0x1870F3D4a7D91B4dC3d735939dbec9538096Dc77",
     "BatchCrossVerifier": "0xe829a754DabD82738197D725a943AcDc148AEd88",
     "PriceCommitter_v1_retired": "0x478D11836CdFdDD60941Ffe08a02b2C2cc70E824",
     "RwaDarkPool_v1_retired": "0x16B2578e48b835F7C04F8a68Ce88D07a798e58b2",
-    "BatchCrossVerifier_v1_retired": "0x54c62F552449FD7031ddA89B978eC2925C411D01"
+    "BatchCrossVerifier_v1_retired": "0x54c62F552449FD7031ddA89B978eC2925C411D01",
+    "RwaDarkPool_v2_retired": "0xE14B341d854354C767abdb634fC7B85652018222"
   },
   "quoteAssetId": 1,
   "registeredAssets": 36,
@@ -32,6 +33,9 @@
     "verification": "All seven contracts are verified on Sourcify at exact_match, creation and runtime bytecode both \u2014 https://sourcify.dev/server/v2/contract/4663/<address>. Not on Blockscout: robinhoodchain.blockscout.com sits behind a Cloudflare challenge that returns an HTML interstitial to forge verify-contract and to Sourcify's own forwarder (403), so that route needs the explorer's web UI. Sourcify is an independent check and the stronger one to cite anyway, since it matches deployed bytecode rather than trusting an explorer's record of it.",
     "redeploy": "v2, block 70,575,648. PriceCommitter v1 deferred any asset whose effectiveAt was non-zero \u2014 the timestamp of the *last* multiplier change, so in the past for anything ever restated. That deferred 13 of 35 assets permanently, AAPL GOOGL META NVDA and SPY among them, while assets nobody had restated crossed normally. RwaDarkPool.pricer is immutable, so the fix meant a new pool; the registry, calendar and all three verifiers were reused, which is why it cost 10.4M gas rather than 42M. Verified after: 35 of 35 assets report flags 0 against the new committer, 22 of 35 against the old one.",
     "shieldGate": "v2's pool is deployed with shieldVerifier = address(0) from its constructor. v1 was deployed with a real screening verifier while no circuit was compiled and no attestation issuer existed, so every deposit reverted with InvalidProof; it was turned off with setVerifiers after the fact. Reinstate when an issuer exists.",
-    "batchVerifier": "Redeployed 2026-09-24 after the batch_cross circuit was corrected: the per-order price selector was one-hot across all 32 table rows without proving the chosen row was one the committed root covers, so a price in a trailing row could drive a trade it never priced. A circuit change is a new verification key, and a proof from the new circuit is rejected by the old verifier with SumcheckFailed. The pool follows via setVerifiers; the retired verifier stays deployed so a proof already in flight against it can still be checked. Confirmed on chain: the new address verifies a real proof from the fixed circuit, the old one rejects it, and a perturbed public input is rejected."
-  }
+    "batchVerifier": "Redeployed 2026-09-24 after the batch_cross circuit was corrected: the per-order price selector was one-hot across all 32 table rows without proving the chosen row was one the committed root covers, so a price in a trailing row could drive a trade it never priced. A circuit change is a new verification key, and a proof from the new circuit is rejected by the old verifier with SumcheckFailed. The pool follows via setVerifiers; the retired verifier stays deployed so a proof already in flight against it can still be checked. Confirmed on chain: the new address verifies a real proof from the fixed circuit, the old one rejects it, and a perturbed public input is rejected.",
+    "pool": "v3, deployed 2026-09-24 at block 71095650. Three findings from the public-source review, all of which change RwaDarkPool and therefore ship together rather than as three redeploys each stranding notes in the last pool. (1) Withdrawal verification was skipped when the verifier was the zero address and the setter accepted zero, so one governance call turned a proof-gated exit into an unproven one; it is unconditional now and setVerifiers refuses both a zero and an address with no code. (2) Published output commitments were emitted beside the proven subtree root with nothing binding them, so a settler could publish leaves a recipient could not build a path from; the contract folds them and refuses a mismatch. (3) Queued deposits drained only from settleBatch and voidWindow, 32 at a time, so past the 32nd a holder had no path and could not withdraw; drainPendingDeposits is permissionless and bounded. Verified on the deployed contract: zeroing the withdrawal verifier reverts WithdrawalVerifierRequired, a codeless one reverts VerifierHasNoCode, the drain exists and reverts NothingQueued on an empty queue, and every byte of the runtime code matches this build apart from immutables and the metadata hash. The v2 pool accepted a zero withdrawal verifier, which is what the finding said.",
+    "retiredPools": "v1 and v2. Notes in either stay withdrawable from the pool that holds them: unshield carries no pause, no role and no window check, and their verifiers are untouched. The vault scans them so a balance never silently disappears."
+  },
+  "deployedAtBlock_pool_v3": 71095650
 }
