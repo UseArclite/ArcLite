@@ -7,6 +7,8 @@ import { preflight } from "../lib/order-preflight";
 import { clientDeployment } from "@/lib/chain/chains";
 import { cash } from "../lib/format";
 import { feature } from "../lib/features";
+import { AmountField } from "./amount-field";
+import { displayAmount } from "../lib/units";
 import { useT } from "../lib/i18n";
 
 /**
@@ -35,6 +37,10 @@ export function SealedOrderPanel() {
   // decimals it is 3e-17 of a share — and the quote conversion floors it to nothing, so the
   // order crosses for zero and looks like a venue that does not work.
   const [units, setUnits] = useState("1000000000000000000");
+  // What the person typed, alongside the integer it parsed to. Held separately so a half-typed
+  // "1." survives a re-render — deriving the text back from the raw value would erase the point
+  // the moment it was pressed.
+  const [typed, setTyped] = useState("1");
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [state, setState] = useState<{ sending: boolean; message: string | null; ok: boolean }>({
     sending: false,
@@ -69,6 +75,11 @@ export function SealedOrderPanel() {
 
   const quoteAsset = vault.poolAssets.find((a) => a.isQuote);
   const baseAsset = vault.poolAssets.find((a) => String(a.assetId) === assetId);
+  // A buy is funded from quote, a sell from the asset itself — so the note the preflight picked
+  // is denominated in whichever of the two this order spends.
+  const funding = side === "buy" ? quoteAsset : baseAsset;
+  const fundingDecimals = funding?.decimals ?? 18;
+  const fundingSymbol = funding?.symbol ?? "";
   /** Raw quote units as money. Quote is six decimals, so this never approaches the float limit. */
   const money = (raw: bigint) => cash(Number(raw) / 10 ** (quoteAsset?.decimals ?? 6));
   const shares = (raw: bigint) =>
@@ -129,17 +140,31 @@ export function SealedOrderPanel() {
             <option value="sell">{t("Sell")}</option>
           </select>
         </label>
-        <label>
-          <span>{t("Raw units")}</span>
-          {/* Raw units, not a decimal quantity: the venue and the circuit both work in uint256
-              base units, and converting here would introduce a rounding step nobody asked for. */}
-          <input
-            value={units}
-            inputMode="numeric"
-            onChange={(e) => setUnits(e.target.value.replace(/\D/g, ""))}
-            disabled={locked}
+        {/* A decimal quantity, with the integer it becomes shown underneath. The raw string is
+            still what `submitOrder` receives, so nothing downstream changed — the conversion is
+            a way of typing a uint256, not a new representation of one. */}
+        {feature("human-units") ? (
+          <AmountField
+            label={t("Quantity")}
+            symbol={baseAsset?.symbol}
+            decimals={baseAsset?.decimals ?? 18}
+            value={typed}
+            onChange={(text, raw) => {
+              setTyped(text);
+              setUnits(raw !== undefined ? raw.toString() : "");
+            }}
           />
-        </label>
+        ) : (
+          <label>
+            <span>{t("Raw units")}</span>
+            <input
+              value={units}
+              inputMode="numeric"
+              onChange={(e) => setUnits(e.target.value.replace(/\D/g, ""))}
+              disabled={locked}
+            />
+          </label>
+        )}
       </div>
 
       {check && (
@@ -154,7 +179,11 @@ export function SealedOrderPanel() {
                 </b>
               </p>
               <p>
-                Funded by your {check.note.units} raw-unit note at leaf {check.note.leafIndex}.
+                Funded by your{" "}
+                {feature("human-units")
+                  ? `${displayAmount(BigInt(check.note.units), fundingDecimals)} ${fundingSymbol}`
+                  : `${check.note.units} raw-unit`}{" "}
+                note at leaf {check.note.leafIndex}.
                 {check.residualRaw != null && check.residualRaw > 0n
                   ? ` A note is spent whole, so about ${
                       side === "buy" ? money(check.residualRaw) : shares(check.residualRaw)

@@ -14,6 +14,8 @@ import { erc20Abi, useVault, type VaultNote } from "./vault-provider";
 import { Holdings } from "./holdings";
 import { TransactionTrail } from "./transaction-trail";
 import { feature } from "../lib/features";
+import { AmountField } from "./amount-field";
+import { displayAmount, formatAmount, parseAmount } from "../lib/units";
 import { useT } from "../lib/i18n";
 
 /**
@@ -199,9 +201,17 @@ function Withdraw() {
 
   const [selected, setSelected] = useState(0);
   const [units, setUnits] = useState("");
+  const [typed, setTyped] = useState("");
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
 
   const chosen = withdrawable[selected];
+  const chosenAsset = vault.poolAssets.find((a) => String(a.assetId) === chosen?.note.assetId);
+  const chosenDecimals = chosenAsset?.decimals ?? 18;
+  // Default the decimal field to the whole note, matching what `amount` already falls back to.
+  useEffect(() => {
+    if (chosen && typed === "") setTyped(formatAmount(BigInt(chosen.note.units), chosenDecimals));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chosen?.note.commitment]);
   // Default to the whole note: a full withdrawal publishes no change note, which is both the
   // cheapest and the least surprising outcome.
   const amount = units || chosen?.note.units || "";
@@ -235,20 +245,39 @@ function Withdraw() {
           <select value={selected} onChange={(e) => setSelected(Number(e.target.value))}>
             {withdrawable.map((w, i) => (
               <option key={`${w.pool ?? "current"}-${w.note.leafIndex}`} value={i}>
-                asset {w.note.assetId} · {w.note.units} units · leaf {w.note.leafIndex}
+                {feature("human-units")
+                  ? `${vault.poolAssets.find((a) => String(a.assetId) === w.note.assetId)?.symbol ?? `asset ${w.note.assetId}`} · ${displayAmount(BigInt(w.note.units), vault.poolAssets.find((a) => String(a.assetId) === w.note.assetId)?.decimals ?? 18)}`
+                  : `asset ${w.note.assetId} · ${w.note.units} units`}{" "}
+                · leaf {w.note.leafIndex}
                 {w.label}
               </option>
             ))}
           </select>
         </label>
-        <label>
-          <span>{t("Raw units")}</span>
-          <input
-            value={amount}
-            inputMode="numeric"
-            onChange={(e) => setUnits(e.target.value.replace(/\D/g, ""))}
+        {feature("human-units") ? (
+          <AmountField
+            label={t("Amount")}
+            symbol={chosenAsset?.symbol}
+            decimals={chosenDecimals}
+            value={typed}
+            // The whole note. Exact, because a note is spent whole and a rounded MAX would leave
+            // a remainder too small to be worth a second withdrawal.
+            max={chosen ? BigInt(chosen.note.units) : undefined}
+            onChange={(text, raw) => {
+              setTyped(text);
+              setUnits(raw !== undefined ? raw.toString() : "");
+            }}
           />
-        </label>
+        ) : (
+          <label>
+            <span>{t("Raw units")}</span>
+            <input
+              value={amount}
+              inputMode="numeric"
+              onChange={(e) => setUnits(e.target.value.replace(/\D/g, ""))}
+            />
+          </label>
+        )}
       </div>
       <div className="vault-deposit-actions">
         <button
@@ -289,6 +318,7 @@ function Deposit() {
   // six for the quote. Reading them from the registry rather than a table means a newly listed
   // asset gets the right default without anyone remembering to add it.
   const [units, setUnits] = useState("");
+  const [typed, setTyped] = useState("1");
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [minting, setMinting] = useState(false);
 
@@ -308,7 +338,14 @@ function Deposit() {
   // Keep the amount meaningful when the asset changes rather than carrying eighteen decimals'
   // worth of units over to a six-decimal token, where it is a million times the supply.
   function chooseAsset(next: string) {
+    // The decimal text stays as typed — "1" means one token whichever asset it is — but the raw
+    // value behind it has to be rescaled, or eighteen decimals' worth of units carries over to a
+    // six-decimal token where it is a million times the supply.
     if (units === wholeUnit(decimalsOf(assetId))) setUnits(wholeUnit(decimalsOf(next)));
+    else {
+      const reparsed = parseAmount(typed, decimalsOf(next));
+      setUnits(reparsed.raw !== undefined ? reparsed.raw.toString() : "");
+    }
     setAssetId(next);
   }
 
@@ -359,14 +396,27 @@ function Deposit() {
             ))}
           </select>
         </label>
-        <label>
-          <span>{t("Raw units")}</span>
-          <input
-            value={units}
-            inputMode="numeric"
-            onChange={(e) => setUnits(e.target.value.replace(/\D/g, ""))}
+        {feature("human-units") ? (
+          <AmountField
+            label={t("Amount")}
+            symbol={assets.find((a) => String(a.assetId) === assetId)?.symbol}
+            decimals={decimalsOf(assetId)}
+            value={typed}
+            onChange={(text, raw) => {
+              setTyped(text);
+              setUnits(raw !== undefined ? raw.toString() : "");
+            }}
           />
-        </label>
+        ) : (
+          <label>
+            <span>{t("Raw units")}</span>
+            <input
+              value={units}
+              inputMode="numeric"
+              onChange={(e) => setUnits(e.target.value.replace(/\D/g, ""))}
+            />
+          </label>
+        )}
       </div>
       <div className="vault-deposit-actions">
         {/* Testnet only. The stand-in tokens have an open `mint` because there is no issuer to

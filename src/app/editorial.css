@@ -211,3 +211,20 @@ html{scroll-padding-top:95px}
  .ritual-stage b{display:none}
  .ritual-now{gap:10px}
 }
+
+/* #3 — decimal amounts, with the integer they become shown beneath. The raw line
+   is deliberately legible rather than hidden: this is a venue whose pitch is that
+   you can check its claims, and a field that quietly converted your number into a
+   different one is the first place that would stop being true. */
+.amount-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.amount-field>span{font:11px/1.4 var(--sans);letter-spacing:.04em;color:#4d496a}
+.amount-input{position:relative;display:flex;align-items:center}
+.amount-input input{flex:1 1 auto;min-width:0;width:100%;font:400 20px/1.2 var(--sans);font-variant-numeric:tabular-nums;padding:10px 12px;border:1px solid #08084244;background:#faf8fb;color:#080842;border-radius:0}
+.amount-input input:focus{outline:2px solid #0079be44;outline-offset:-1px;border-color:#080842}
+.amount-input input[aria-invalid="true"]{border-color:#b0234899}
+.amount-max{position:absolute;right:8px;background:#e8bfd6;border:1px solid #080842;color:#080842;font:600 9px/1 var(--sans);letter-spacing:.08em;padding:6px 8px;cursor:pointer}
+.amount-max:hover{background:#080842;color:#f5ecf2}
+.amount-max:disabled{opacity:.4;cursor:default}
+.amount-raw{font:10px/1.5 var(--sans);color:#6a6789;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.amount-error{font:11px/1.5 var(--sans);color:#b02348}
+.amount-hint{font:10px/1.5 var(--sans);color:#6a6789}
