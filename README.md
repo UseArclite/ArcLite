@@ -31,8 +31,9 @@ is frozen, and only *then* does the contract read its price oracles and commit a
 chain. Everything crosses at that reference, pro-rata, and the whole batch settles under a single
 zero-knowledge proof.
 
-That ordering — **seal the book, then fix the prices** — is the venue's central security property.
-Nobody, the operator included, can see a book and then choose the prices it will trade against.
+That ordering — **seal the book, then fix the prices** — is the venue's central design property:
+the contract, not the matcher, decides what a window trades against. Enforcement of it is not yet
+complete in the checked-in circuit; see [Known limitations](#known-limitations).
 
 Balances are held as shielded notes in an append-only commitment tree. A browser derives its own
 keys from a wallet signature, locates its own notes, and proves its own withdrawals locally. No
@@ -181,10 +182,11 @@ Further limits worth knowing before depositing:
 - **Deposits are public transfers.** The link between a funding address and a shielded position is
   not broken by this design; privacy comes from the size of the anonymity set, which is small at
   launch. The dashboard reports that set size rather than implying more than is true.
-- **Withdrawal needs no operator.** `unshield` carries no pause, no role and no window check. A
-  holder who can produce a valid proof can exit whatever the venue is doing — and the proof is
-  generated in their own browser, because a server that could prove a withdrawal could also spend
-  the note.
+- **Withdrawal needs no operator, once the note is in the tree.** `unshield` carries no pause, no
+  role and no window check, and the proof is generated in the holder's own browser — a server that
+  could prove a withdrawal could also spend the note. The qualifier matters: a deposit enters the
+  commitment tree in batches of at most 32, and a note still queued has no Merkle path and so
+  cannot yet be withdrawn. See [Known limitations](#known-limitations).
 - **Solvency is a check, not a proof.** Crossing transfers zero ERC-20s, so the pool's obligations
   change only on deposit and withdrawal. Solvency reduces to
   `balanceOf(pool) >= totalUnits(asset)` — something anyone can evaluate against the chain without
@@ -192,6 +194,24 @@ Further limits worth knowing before depositing:
 - **Reference prices carry a bounded deviation.** Chainlink updates on a 0.5 % move or a heartbeat,
   so a committed reference may sit up to that far from the true mid. This is a disclosed property
   of the venue, not a defect.
+
+### Known limitations
+
+An external review of the published source in September 2026 identified the following. They are
+recorded here because the repository is open for technical review and a reader is entitled to know
+what the code does not yet do. Each has been reproduced against the source.
+
+| Area | Finding | Consequence |
+|:--|:--|:--|
+| Batch price table | `prices_root` chains only rows below `asset_count`, while the per-order selector is one-hot across all 32 rows with no constraint that the chosen row is live. | A price outside the committed range does not change the root, so the proof does not yet fully enforce that a trade used the committed table. Exploitable only by the party generating proofs. |
+| Queued notes | Pending commitments enter the tree in batches of at most 32, and only when a window settles or voids. There is no permissionless drain. | A note beyond the 32nd can sit outside the tree, and until it enters one it has no Merkle path and cannot be withdrawn. |
+| Output commitments | `settleBatch` inserts the proof-bound subtree root but publishes a separately supplied commitment list without checking the two agree. | A recipient rebuilding the tree from events depends on the settler publishing the correct leaves. |
+| Withdrawal verifier | Verification is skipped when the verifier address is zero, and the setter accepts zero. | A governance action could turn a proof-gated withdrawal into an unproven one. |
+| Screening | The shield verifier is deliberately set to zero on the deployed pools, and the screening circuit takes its policy inputs from the caller. | The venue does not currently enforce issuer, jurisdiction or eligibility screening, and does not claim to. |
+
+**Batch settlement of real value is being held while the first of these is repaired.** Until the
+circuit, its verification key and the generated Solidity verifier are rebuilt and redeployed, the
+published source should not be read as establishing that a settled batch used the committed prices.
 
 ### Reporting a vulnerability
 
