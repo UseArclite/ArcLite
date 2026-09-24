@@ -182,11 +182,11 @@ Further limits worth knowing before depositing:
 - **Deposits are public transfers.** The link between a funding address and a shielded position is
   not broken by this design; privacy comes from the size of the anonymity set, which is small at
   launch. The dashboard reports that set size rather than implying more than is true.
-- **Withdrawal needs no operator, once the note is in the tree.** `unshield` carries no pause, no
-  role and no window check, and the proof is generated in the holder's own browser — a server that
-  could prove a withdrawal could also spend the note. The qualifier matters: a deposit enters the
-  commitment tree in batches of at most 32, and a note still queued has no Merkle path and so
-  cannot yet be withdrawn. See [Known limitations](#known-limitations).
+- **Withdrawal needs no operator.** `unshield` carries no pause, no role and no window check, and
+  the proof is generated in the holder's own browser — a server that could prove a withdrawal
+  could also spend the note. A deposit still enters the commitment tree in batches, so a note may
+  be queued briefly before it has a Merkle path; `drainPendingDeposits` is permissionless, so
+  getting it into the tree does not depend on the operator either.
 - **Solvency is a check, not a proof.** Crossing transfers zero ERC-20s, so the pool's obligations
   change only on deposit and withdrawal. Solvency reduces to
   `balanceOf(pool) >= totalUnits(asset)` — something anyone can evaluate against the chain without
@@ -203,20 +203,30 @@ what the code does not yet do. Each has been reproduced against the source.
 
 | Area | Finding | Consequence |
 |:--|:--|:--|
-| Queued notes | Pending commitments enter the tree in batches of at most 32, and only when a window settles or voids. There is no permissionless drain. | A note beyond the 32nd can sit outside the tree, and until it enters one it has no Merkle path and cannot be withdrawn. |
-| Output commitments | `settleBatch` inserts the proof-bound subtree root but publishes a separately supplied commitment list without checking the two agree. | A recipient rebuilding the tree from events depends on the settler publishing the correct leaves. |
-| Withdrawal verifier | Verification is skipped when the verifier address is zero, and the setter accepts zero. | A governance action could turn a proof-gated withdrawal into an unproven one. |
 | Screening | The shield verifier is deliberately set to zero on the deployed pools, and the screening circuit takes its policy inputs from the caller. | The venue does not currently enforce issuer, jurisdiction or eligibility screening, and does not claim to. |
 
-**Fixed and deployed, 2026-09-24.** The first finding in the original review was that the
-per-order price selector was one-hot across all 32 table rows without proving the chosen row was
-inside the range the committed root covers — so a price in a trailing row could drive a trade the
-contract never priced. The circuit now constrains every out-of-range selector to zero. The circuit,
-its verification key and the generated Solidity verifier were rebuilt with the pinned toolchain and
-the verifier redeployed, and the pool points at it. A regression test reproduces the attack against
-the unfixed circuit and is rejected by the fixed one.
+**Four of the five findings were fixed and deployed on 2026-09-24.**
 
-The remaining rows above are open.
+- **Price table.** The per-order selector was one-hot across all 32 rows without proving the chosen
+  row was inside the range the committed root covers, so a price in a trailing row could drive a
+  trade the contract never priced. The circuit now constrains every out-of-range selector to zero;
+  the circuit, its verification key and the generated Solidity verifier were rebuilt with the
+  pinned toolchain and the verifier redeployed.
+- **Withdrawal verifier.** Verification was skipped when the address was zero and the setter
+  accepted zero. It is unconditional now, and `setVerifiers` refuses both a zero and an address
+  with no code.
+- **Output commitments.** The published leaf list is folded on chain and a settlement whose leaves
+  do not produce the spliced subtree root is refused.
+- **Queued notes.** `drainPendingDeposits` is permissionless and bounded, so a holder whose note is
+  queued can get it into the tree without waiting for the venue to settle a window.
+
+The last three changed `RwaDarkPool`, which is immutable by design, so they shipped as a new pool.
+Each was verified against the deployed contract rather than the source that produced it, and every
+regression is reproduced as a test that fails against the unfixed code.
+
+The screening row above is open, and is a stated property of the venue rather than a defect: there
+is no issuer to sign an attestation, so the gate is deliberately off and the venue does not claim
+to screen.
 
 ### Reporting a vulnerability
 
