@@ -71,7 +71,9 @@ export type Feature =
   /** #5 — Watch a withdrawal being proved, stage by stage. */
   | "proof-theatre"
   /** #28 — The venue's cumulative record, including the unflattering rows. */
-  | "venue-record";
+  | "venue-record"
+  /** Notes stranded in a retired pool, and what moving them costs. */
+  | "pool-migration";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be

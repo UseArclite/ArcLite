@@ -18,6 +18,7 @@ import { TransactionTrail } from "./transaction-trail";
 import { VaultLock } from "./vault-lock";
 import { FirstRun } from "./first-run";
 import { ProofTheatre } from "./proof-theatre";
+import { PoolMigration } from "./pool-migration";
 import { feature } from "../lib/features";
 import { AmountField } from "./amount-field";
 import { displayAmount, formatAmount, parseAmount } from "../lib/units";
@@ -151,6 +152,7 @@ export function VaultPanel() {
             </div>
           )}
 
+          {feature("pool-migration") && <PoolMigration />}
           <Deposit />
           <Withdraw />
 
