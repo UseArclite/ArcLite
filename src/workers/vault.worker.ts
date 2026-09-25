@@ -230,7 +230,27 @@ export type VaultResponse =
       /** The sealed payload, hex. The main thread never sees its contents. */
       payloadCt: string;
     }
+  /**
+   * A phase boundary inside a long job, so the main thread can say what is happening.
+   *
+   * Unlike every other member this does **not** complete the request: the same `id` still gets
+   * its real reply afterwards. The router in `vault-provider.tsx` has to leave the pending
+   * handler in place when it sees one, which is the whole reason this is a separate type rather
+   * than a field on the result.
+   *
+   * Nothing secret travels here. A phase name is not a witness.
+   */
+  | { id: number; type: "progress"; phase: ProofPhase }
   | { id: number; type: "error"; error: string };
+
+/**
+ * The stages a withdrawal actually goes through, in order.
+ *
+ * Named after what the worker does rather than after a cryptographic narrative: there is no local
+ * verification step here, so there is no stage claiming one. `broadcasting` is set by the main
+ * thread once the proof comes back and the transaction goes out.
+ */
+export type ProofPhase = "locating" | "witness" | "proving" | "broadcasting";
 
 // Module scope inside the worker. Never posted, never persisted.
 let keys: VaultKeys | null = null;
@@ -505,6 +525,10 @@ async function handle(request: VaultRequest): Promise<VaultResponse> {
       // crossing returned would otherwise rebuild the parent, whose commitment is not at the
       // leaf being proved against — so the scan below would simply not find it, and the holder
       // would be told their own note was not in the pool.
+      // Each phase is announced before it starts, so the panel is never a step behind what the
+      // worker is doing. Proving is seconds; the two before it are milliseconds, and showing them
+      // is what makes the wait legible rather than uniform.
+      post({ id: request.id, type: "progress", phase: "locating" });
       const candidate = rebuildNote(keys, {
         epoch: request.epoch,
         counter: request.counter,
@@ -523,6 +547,7 @@ async function handle(request: VaultRequest): Promise<VaultResponse> {
           error: "that note is not in this pool's commitment set",
         };
       }
+      post({ id: request.id, type: "progress", phase: "witness" });
       const witness = buildUnshieldWitness(keys, found.root, {
         note: confirmed,
         units: BigInt(request.units),
@@ -530,6 +555,7 @@ async function handle(request: VaultRequest): Promise<VaultResponse> {
         changeCounter: request.changeCounter,
       });
 
+      post({ id: request.id, type: "progress", phase: "proving" });
       const started = Date.now();
       const proof = await proveUnshield(witness.inputs);
       const p = witness.publicInputs;

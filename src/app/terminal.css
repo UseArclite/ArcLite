@@ -1042,3 +1042,70 @@
   color: var(--t-text);
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Proof theatre ───────────────────────────────────────────────────────
+ * A few seconds of real work, shown rather than hidden. Only the stage in hand explains itself,
+ * the same discipline the rest of this dashboard uses. */
+
+.dashboard[data-skin="terminal"] .proof-theatre {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--t-accent);
+  background: #0a0a14;
+}
+.dashboard[data-skin="terminal"] .proof-theatre-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dashboard[data-skin="terminal"] .proof-theatre-top b {
+  font: 600 13px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .proof-theatre ol {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.dashboard[data-skin="terminal"] .proof-theatre li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font: 11px/1.45 var(--mono);
+  color: #4e5c72;
+}
+.dashboard[data-skin="terminal"] .proof-theatre li.is-done {
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .proof-theatre li.is-done .proof-mark {
+  color: var(--t-good);
+}
+.dashboard[data-skin="terminal"] .proof-theatre li.is-current {
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .proof-theatre li.is-current .proof-mark,
+.dashboard[data-skin="terminal"] .proof-theatre li.is-current b {
+  color: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .proof-mark {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.dashboard[data-skin="terminal"] .proof-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.dashboard[data-skin="terminal"] .proof-body b {
+  font: 600 11px/1.3 var(--mono);
+  letter-spacing: 0.04em;
+}
+.dashboard[data-skin="terminal"] .proof-body small {
+  font: 10px/1.55 var(--mono);
+  color: var(--t-dim);
+}

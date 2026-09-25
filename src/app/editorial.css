@@ -23,6 +23,19 @@
 .window-history{grid-column:1 / -1}
 .activity-ledger{margin-top:16px}
 .preflight-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.proof-theatre{margin-top:12px;padding:12px 14px;border:1px solid #0056a4;background:#0808420a}
+.proof-theatre-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.proof-theatre-top b{font:600 13px/1 var(--sans);color:#0056a4}
+.proof-theatre ol{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.proof-theatre li{display:flex;align-items:flex-start;gap:9px;font:11px/1.45 var(--sans);color:#8b8bae}
+.proof-theatre li.is-done{color:#4d496a}
+.proof-theatre li.is-done .proof-mark{color:#00647b}
+.proof-theatre li.is-current{color:#080842}
+.proof-theatre li.is-current .proof-mark,.proof-theatre li.is-current b{color:#0056a4}
+.proof-mark{flex-shrink:0;margin-top:1px}
+.proof-body{display:flex;flex-direction:column;gap:4px;min-width:0}
+.proof-body b{font:600 11px/1.3 var(--sans)}
+.proof-body small{font:10px/1.55 var(--sans);color:#545375}
 .preflight-shortfall{font:10px/1.4 var(--sans);color:#545375}
 .preflight-shortfall b{color:#080842}
 .activity-scroll{overflow-x:auto;max-height:420px;overflow-y:auto}

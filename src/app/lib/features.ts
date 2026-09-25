@@ -67,7 +67,9 @@ export type Feature =
   /** #19 — Everything this vault has done, rebuilt from its own keys. */
   | "activity-ledger"
   /** #14 — Make the pre-flight's suggested size one click. */
-  | "sizing-actions";
+  | "sizing-actions"
+  /** #5 — Watch a withdrawal being proved, stage by stage. */
+  | "proof-theatre";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be

@@ -17,6 +17,7 @@ import { Holdings } from "./holdings";
 import { TransactionTrail } from "./transaction-trail";
 import { VaultLock } from "./vault-lock";
 import { FirstRun } from "./first-run";
+import { ProofTheatre } from "./proof-theatre";
 import { feature } from "../lib/features";
 import { AmountField } from "./amount-field";
 import { displayAmount, formatAmount, parseAmount } from "../lib/units";
@@ -297,7 +298,7 @@ function Withdraw() {
     });
     setMessage({
       text: result.ok
-        ? `Withdrawn. Proved in ${((result.provingMs ?? 0) / 1000).toFixed(1)}s, settled on chain.`
+        ? `Withdrawn. Proved in ${((result.provingMs ?? 0) / 1000).toFixed(1)}s on this machine, settled on chain.`
         : (result.reason ?? "The withdrawal failed."),
       ok: result.ok,
     });
@@ -350,6 +351,9 @@ function Withdraw() {
         )}
       </div>
       {feature("withdraw-timing") && <Linkability units={amount} address={address} />}
+      {/* Replaces the message line while a withdrawal runs: the panel below says what happened,
+          this says what is happening. */}
+      {feature("proof-theatre") && <ProofTheatre />}
       <div className="vault-deposit-actions">
         <button
           className="seal-order-button"

@@ -15,7 +15,7 @@ import { vaultMessage, type NoteOrigin } from "@/lib/notes/vault";
 import { preflight } from "../lib/order-preflight";
 import { readSpent, type SpentResult } from "../lib/spent-check";
 import { useMarket } from "./market-provider";
-import type { VaultRequest, VaultResponse } from "@/workers/vault.worker";
+import type { ProofPhase, VaultRequest, VaultResponse } from "@/workers/vault.worker";
 
 /**
  * The shielded vault, main-thread half.
@@ -161,6 +161,8 @@ export interface VaultValue {
     pool?: `0x${string}`;
   }) => Promise<{ ok: boolean; reason?: string; txHash?: string; provingMs?: number }>;
   withdrawing: boolean;
+  /** Which stage the running withdrawal is at, or null when none is. */
+  proofPhase: ProofPhase | null;
   /** Notes stranded in a pool the venue has retired. Withdrawable, not tradable. */
   legacyNotes: LegacyNote[];
   /** What `shield` will accept on this network, from the registry. Empty until it loads. */
@@ -449,6 +451,13 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const [notes, setNotes] = useState<VaultNote[]>([]);
   const [shielding, setShielding] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
+  /**
+   * Which stage a withdrawal is at, or null when none is running.
+   *
+   * A single field rather than a map because only one withdrawal can be in flight — `withdrawing`
+   * is already a single boolean and the button is disabled while it is set.
+   */
+  const [proofPhase, setProofPhase] = useState<ProofPhase | null>(null);
   const [legacyNotes, setLegacyNotes] = useState<LegacyNote[]>([]);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -556,6 +565,13 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       type: "module",
     });
     instance.addEventListener("message", (event: MessageEvent<VaultResponse>) => {
+      // A progress message is not a reply. The same request still owes its real result, so the
+      // pending handler has to survive — deleting it here would resolve `ask` with a phase name
+      // and leave the actual proof with nowhere to go.
+      if (event.data.type === "progress") {
+        setProofPhase(event.data.phase);
+        return;
+      }
       pending.current.get(event.data.id)?.(event.data);
       pending.current.delete(event.data.id);
     });
@@ -1181,6 +1197,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
           ]);
         }
 
+        // The proof is done and the wallet is next. The worker cannot know this stage, so the
+        // main thread sets it.
+        setProofPhase("broadcasting");
         const closeWithdraw = recordTx("withdraw", {
           assetId: request.note.assetId,
           units: request.units,
@@ -1236,6 +1255,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         };
       } finally {
         setWithdrawing(false);
+        setProofPhase(null);
       }
     },
     [
@@ -1379,6 +1399,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         submitOrder,
         withdraw,
         withdrawing,
+        proofPhase,
         legacyNotes,
         poolAssets: poolAssets ?? [],
         recover,
