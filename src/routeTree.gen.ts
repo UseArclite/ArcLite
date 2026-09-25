@@ -24,6 +24,7 @@ import { Route as ApiCronOracleRouteImport } from './routes/api/cron/oracle'
 import { Route as ApiCronTickRouteImport } from './routes/api/cron/tick'
 import { Route as ApiMarketAssetsRouteImport } from './routes/api/market/assets'
 import { Route as ApiMarketCrossingRouteImport } from './routes/api/market/crossing'
+import { Route as ApiMarketDepthRouteImport } from './routes/api/market/depth'
 import { Route as ApiMarketSeriesRouteImport } from './routes/api/market/series'
 import { Route as ApiMarketSupplyRouteImport } from './routes/api/market/supply'
 import { Route as ApiMarketWindowRouteImport } from './routes/api/market/window'
@@ -110,6 +111,11 @@ const ApiMarketCrossingRoute = ApiMarketCrossingRouteImport.update({
   path: '/api/market/crossing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMarketDepthRoute = ApiMarketDepthRouteImport.update({
+  id: '/api/market/depth',
+  path: '/api/market/depth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMarketSeriesRoute = ApiMarketSeriesRouteImport.update({
   id: '/api/market/series',
   path: '/api/market/series',
@@ -177,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/api/cron/tick': typeof ApiCronTickRoute
   '/api/market/assets': typeof ApiMarketAssetsRoute
   '/api/market/crossing': typeof ApiMarketCrossingRoute
+  '/api/market/depth': typeof ApiMarketDepthRoute
   '/api/market/series': typeof ApiMarketSeriesRoute
   '/api/market/supply': typeof ApiMarketSupplyRoute
   '/api/market/window': typeof ApiMarketWindowRoute
@@ -204,6 +211,7 @@ export interface FileRoutesByTo {
   '/api/cron/tick': typeof ApiCronTickRoute
   '/api/market/assets': typeof ApiMarketAssetsRoute
   '/api/market/crossing': typeof ApiMarketCrossingRoute
+  '/api/market/depth': typeof ApiMarketDepthRoute
   '/api/market/series': typeof ApiMarketSeriesRoute
   '/api/market/supply': typeof ApiMarketSupplyRoute
   '/api/market/window': typeof ApiMarketWindowRoute
@@ -232,6 +240,7 @@ export interface FileRoutesById {
   '/api/cron/tick': typeof ApiCronTickRoute
   '/api/market/assets': typeof ApiMarketAssetsRoute
   '/api/market/crossing': typeof ApiMarketCrossingRoute
+  '/api/market/depth': typeof ApiMarketDepthRoute
   '/api/market/series': typeof ApiMarketSeriesRoute
   '/api/market/supply': typeof ApiMarketSupplyRoute
   '/api/market/window': typeof ApiMarketWindowRoute
@@ -261,6 +270,7 @@ export interface FileRouteTypes {
     | '/api/cron/tick'
     | '/api/market/assets'
     | '/api/market/crossing'
+    | '/api/market/depth'
     | '/api/market/series'
     | '/api/market/supply'
     | '/api/market/window'
@@ -288,6 +298,7 @@ export interface FileRouteTypes {
     | '/api/cron/tick'
     | '/api/market/assets'
     | '/api/market/crossing'
+    | '/api/market/depth'
     | '/api/market/series'
     | '/api/market/supply'
     | '/api/market/window'
@@ -315,6 +326,7 @@ export interface FileRouteTypes {
     | '/api/cron/tick'
     | '/api/market/assets'
     | '/api/market/crossing'
+    | '/api/market/depth'
     | '/api/market/series'
     | '/api/market/supply'
     | '/api/market/window'
@@ -343,6 +355,7 @@ export interface RootRouteChildren {
   ApiCronTickRoute: typeof ApiCronTickRoute
   ApiMarketAssetsRoute: typeof ApiMarketAssetsRoute
   ApiMarketCrossingRoute: typeof ApiMarketCrossingRoute
+  ApiMarketDepthRoute: typeof ApiMarketDepthRoute
   ApiMarketSeriesRoute: typeof ApiMarketSeriesRoute
   ApiMarketSupplyRoute: typeof ApiMarketSupplyRoute
   ApiMarketWindowRoute: typeof ApiMarketWindowRoute
@@ -462,6 +475,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMarketCrossingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/market/depth': {
+      id: '/api/market/depth'
+      path: '/api/market/depth'
+      fullPath: '/api/market/depth'
+      preLoaderRoute: typeof ApiMarketDepthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/market/series': {
       id: '/api/market/series'
       path: '/api/market/series'
@@ -551,6 +571,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCronTickRoute: ApiCronTickRoute,
   ApiMarketAssetsRoute: ApiMarketAssetsRoute,
   ApiMarketCrossingRoute: ApiMarketCrossingRoute,
+  ApiMarketDepthRoute: ApiMarketDepthRoute,
   ApiMarketSeriesRoute: ApiMarketSeriesRoute,
   ApiMarketSupplyRoute: ApiMarketSupplyRoute,
   ApiMarketWindowRoute: ApiMarketWindowRoute,

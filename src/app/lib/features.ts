@@ -57,7 +57,9 @@ export type Feature =
   /** #13 — Whether this asset has ever actually crossed, as observed history. */
   | "crossing-history"
   /** #11 — The four steps to a first trade, with the current one marked. */
-  | "first-run";
+  | "first-run"
+  /** Lit liquidity per asset, read from the public DEX on this chain. */
+  | "lit-depth";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be

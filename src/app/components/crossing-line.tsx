@@ -1,8 +1,10 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { Repeat2 } from "lucide-react";
+import { Droplets, Repeat2 } from "lucide-react";
 import { clientChainId } from "@/lib/chain/chains";
 import { describeCrossing } from "../lib/crossing-history";
+import { describeLitMarket } from "../lib/lit-market";
+import { feature } from "../lib/features";
 import { useT } from "../lib/i18n";
 
 /**
@@ -36,6 +38,24 @@ export function CrossingLine({ symbol }: { symbol: string }) {
     retry: false,
   });
 
+  // Lit depth on the public DEX. Fetched alongside the crossing record because the two only
+  // mean something together: "never crossed here" and "$3.6M of liquidity next door" is a
+  // different message from either half on its own.
+  const showLit = feature("lit-depth");
+  const { data: depth } = useQuery({
+    queryKey: ["lit-depth", chainId],
+    enabled: showLit,
+    queryFn: async () => {
+      const res = await fetch("/api/market/depth", { credentials: "omit" });
+      return (await res.json()) as {
+        quote?: { symbol?: string; decimals?: number };
+        depth?: { symbol: string; quoteRaw: string; feeTier: number }[];
+      };
+    },
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+
   const { data: history } = useQuery({
     queryKey: ["crossing-history", chainId],
     queryFn: async () => {
@@ -64,13 +84,36 @@ export function CrossingLine({ symbol }: { symbol: string }) {
     lastCrossAt: row?.lastCrossAt ?? null,
   });
 
+  // Only claim the absence of a lit market once the endpoint has actually answered — a pending
+  // fetch and a genuinely unlisted asset must not produce the same sentence.
+  const pool = depth?.depth?.find((d) => d.symbol === symbol);
+  const lit = showLit && depth
+    ? describeLitMarket({
+        symbol,
+        quoteRaw: pool?.quoteRaw ?? null,
+        quoteDecimals: depth.quote?.decimals ?? 6,
+        feeTier: pool?.feeTier ?? null,
+      })
+    : null;
+
   return (
-    <p
-      className={"crossing-line" + (line.hasCrossed ? " has-crossed" : "")}
-      title={t("Observed history, not a forecast.")}
-    >
-      <Repeat2 size={13} aria-hidden="true" />
-      {line.text}
-    </p>
+    <>
+      <p
+        className={"crossing-line" + (line.hasCrossed ? " has-crossed" : "")}
+        title={t("Observed history, not a forecast.")}
+      >
+        <Repeat2 size={13} aria-hidden="true" />
+        {line.text}
+      </p>
+      {lit?.text && (
+        <p
+          className={"crossing-line lit-line" + (lit.hasMarket ? " has-market" : "")}
+          title={t("Read from the public DEX on this chain, not from any third-party feed.")}
+        >
+          <Droplets size={13} aria-hidden="true" />
+          {lit.text}
+        </p>
+      )}
+    </>
   );
 }

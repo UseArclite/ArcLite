@@ -870,3 +870,17 @@
   flex-shrink: 0;
   margin-top: 1px;
 }
+
+/* Lit depth, under the crossing record. Dimmer than it: what happens elsewhere is context for
+ * what happens here, not a competing headline. */
+.dashboard[data-skin="terminal"] .lit-line {
+  margin-top: 4px;
+  color: #5d6b80;
+}
+.dashboard[data-skin="terminal"] .lit-line.has-market {
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .lit-line.has-market svg {
+  color: var(--t-accent);
+  opacity: 0.9;
+}
