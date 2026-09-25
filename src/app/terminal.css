@@ -1109,3 +1109,46 @@
   font: 10px/1.55 var(--mono);
   color: var(--t-dim);
 }
+
+/* ── The record ──────────────────────────────────────────────────────────
+ * Spans the proofs grid. The figures lead and their denominators follow, because a number without
+ * one is the half that flatters. */
+
+.dashboard[data-skin="terminal"] .venue-record {
+  grid-column: 1 / -1;
+}
+.dashboard[data-skin="terminal"] .venue-record-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1px;
+  background: var(--t-line-soft);
+  border: 1px solid var(--t-line-soft);
+}
+.dashboard[data-skin="terminal"] .venue-record-rows li {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 13px;
+  background: var(--t-panel);
+}
+.dashboard[data-skin="terminal"] .venue-record-value {
+  font: 600 20px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .venue-record-label b {
+  display: block;
+  font: 10px/1.3 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .venue-record-label small {
+  display: block;
+  margin-top: 3px;
+  font: 10px/1.45 var(--mono);
+  color: #5d6b80;
+}

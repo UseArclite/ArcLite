@@ -27,6 +27,7 @@ import { CrossingLine } from "../components/crossing-line";
 import { SupplyNotice } from "../components/supply-notice";
 import { VenueStatus } from "../components/venue-status";
 import { WindowHistory } from "../components/window-history";
+import { VenueRecord } from "../components/venue-record";
 import { DisclosurePanel } from "../components/disclosure-panel";
 import { feature } from "../lib/features";
 import { SESSION_POLICY, type SessionKind } from "@/lib/chain/sessions";
@@ -520,6 +521,7 @@ export default function Dashboard() {
                   all comes before whether its books balance, and inserted later it took the
                   solvency panel's column instead. */}
               {feature("venue-status") && <VenueStatus />}
+              {feature("venue-record") && <VenueRecord />}
               <section className="proof-orbit-panel">
                 <span className="eyebrow">{t("PUBLIC ACCOUNTABILITY")}</span>
                 <div className="proof-engraving">

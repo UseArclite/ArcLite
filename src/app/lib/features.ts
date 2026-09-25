@@ -69,7 +69,9 @@ export type Feature =
   /** #14 — Make the pre-flight's suggested size one click. */
   | "sizing-actions"
   /** #5 — Watch a withdrawal being proved, stage by stage. */
-  | "proof-theatre";
+  | "proof-theatre"
+  /** #28 — The venue's cumulative record, including the unflattering rows. */
+  | "venue-record";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be
