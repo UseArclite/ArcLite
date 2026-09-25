@@ -32,6 +32,7 @@ import { feature } from "../lib/features";
 import { SESSION_POLICY, type SessionKind } from "@/lib/chain/sessions";
 import { ConnectButton } from "../components/connect-button";
 import { VaultPanel } from "../components/vault-panel";
+import { ActivityLedger } from "../components/activity-ledger";
 import { SolvencyRecord } from "../components/solvency-panel";
 import { ReceiptsPanel } from "../components/receipts-panel";
 import { SealedOrderPanel } from "../components/sealed-order-panel";
@@ -504,6 +505,7 @@ export default function Dashboard() {
             {/* Above the balance, because it changes what the balance means. */}
             {feature("privacy-meter") && <PrivacyMeter />}
             <VaultPanel />
+            {feature("activity-ledger") && <ActivityLedger />}
             <Detail label={t("Value moves. Units stay yours.")}>
               <p>
                 {t(

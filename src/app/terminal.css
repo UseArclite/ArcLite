@@ -985,3 +985,43 @@
   align-items: center;
   gap: 4px;
 }
+
+/* ── Activity ledger ─────────────────────────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] .activity-ledger {
+  margin-top: 16px;
+}
+.dashboard[data-skin="terminal"] .activity-scroll {
+  overflow-x: auto;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.dashboard[data-skin="terminal"] .activity-ledger td b {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+.dashboard[data-skin="terminal"] .activity-ledger td small {
+  display: block;
+  margin-top: 2px;
+  font: 10px/1.3 var(--mono);
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .activity-ledger tr.is-fill td b {
+  color: var(--t-good);
+}
+.dashboard[data-skin="terminal"] .activity-ledger tr.is-deposit td b,
+.dashboard[data-skin="terminal"] .activity-ledger tr.is-withdraw td b {
+  color: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .activity-ledger tr.is-order td b,
+.dashboard[data-skin="terminal"] .activity-ledger tr.is-approve td b {
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .activity-ledger a {
+  color: var(--t-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}

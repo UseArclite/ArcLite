@@ -63,7 +63,9 @@ export type Feature =
   /** #15 — The venue publishing its own alarms. */
   | "venue-status"
   /** #17 — Recent windows and what became of each. */
-  | "window-history";
+  | "window-history"
+  /** #19 — Everything this vault has done, rebuilt from its own keys. */
+  | "activity-ledger";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be
