@@ -29,6 +29,7 @@ import { Route as ApiMarketDepthRouteImport } from './routes/api/market/depth'
 import { Route as ApiMarketSeriesRouteImport } from './routes/api/market/series'
 import { Route as ApiMarketSupplyRouteImport } from './routes/api/market/supply'
 import { Route as ApiMarketWindowRouteImport } from './routes/api/market/window'
+import { Route as ApiMarketWindowsRouteImport } from './routes/api/market/windows'
 import { Route as ApiNotesDepositsRouteImport } from './routes/api/notes/deposits'
 import { Route as ApiNotesLeavesRouteImport } from './routes/api/notes/leaves'
 import { Route as ApiOrdersReceiptsRouteImport } from './routes/api/orders/receipts'
@@ -137,6 +138,11 @@ const ApiMarketWindowRoute = ApiMarketWindowRouteImport.update({
   path: '/api/market/window',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMarketWindowsRoute = ApiMarketWindowsRouteImport.update({
+  id: '/api/market/windows',
+  path: '/api/market/windows',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiNotesDepositsRoute = ApiNotesDepositsRouteImport.update({
   id: '/api/notes/deposits',
   path: '/api/notes/deposits',
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/api/market/series': typeof ApiMarketSeriesRoute
   '/api/market/supply': typeof ApiMarketSupplyRoute
   '/api/market/window': typeof ApiMarketWindowRoute
+  '/api/market/windows': typeof ApiMarketWindowsRoute
   '/api/notes/deposits': typeof ApiNotesDepositsRoute
   '/api/notes/leaves': typeof ApiNotesLeavesRoute
   '/api/orders/receipts': typeof ApiOrdersReceiptsRoute
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/api/market/series': typeof ApiMarketSeriesRoute
   '/api/market/supply': typeof ApiMarketSupplyRoute
   '/api/market/window': typeof ApiMarketWindowRoute
+  '/api/market/windows': typeof ApiMarketWindowsRoute
   '/api/notes/deposits': typeof ApiNotesDepositsRoute
   '/api/notes/leaves': typeof ApiNotesLeavesRoute
   '/api/orders/receipts': typeof ApiOrdersReceiptsRoute
@@ -253,6 +261,7 @@ export interface FileRoutesById {
   '/api/market/series': typeof ApiMarketSeriesRoute
   '/api/market/supply': typeof ApiMarketSupplyRoute
   '/api/market/window': typeof ApiMarketWindowRoute
+  '/api/market/windows': typeof ApiMarketWindowsRoute
   '/api/notes/deposits': typeof ApiNotesDepositsRoute
   '/api/notes/leaves': typeof ApiNotesLeavesRoute
   '/api/orders/receipts': typeof ApiOrdersReceiptsRoute
@@ -284,6 +293,7 @@ export interface FileRouteTypes {
     | '/api/market/series'
     | '/api/market/supply'
     | '/api/market/window'
+    | '/api/market/windows'
     | '/api/notes/deposits'
     | '/api/notes/leaves'
     | '/api/orders/receipts'
@@ -313,6 +323,7 @@ export interface FileRouteTypes {
     | '/api/market/series'
     | '/api/market/supply'
     | '/api/market/window'
+    | '/api/market/windows'
     | '/api/notes/deposits'
     | '/api/notes/leaves'
     | '/api/orders/receipts'
@@ -342,6 +353,7 @@ export interface FileRouteTypes {
     | '/api/market/series'
     | '/api/market/supply'
     | '/api/market/window'
+    | '/api/market/windows'
     | '/api/notes/deposits'
     | '/api/notes/leaves'
     | '/api/orders/receipts'
@@ -372,6 +384,7 @@ export interface RootRouteChildren {
   ApiMarketSeriesRoute: typeof ApiMarketSeriesRoute
   ApiMarketSupplyRoute: typeof ApiMarketSupplyRoute
   ApiMarketWindowRoute: typeof ApiMarketWindowRoute
+  ApiMarketWindowsRoute: typeof ApiMarketWindowsRoute
   ApiNotesDepositsRoute: typeof ApiNotesDepositsRoute
   ApiNotesLeavesRoute: typeof ApiNotesLeavesRoute
   ApiOrdersReceiptsRoute: typeof ApiOrdersReceiptsRoute
@@ -523,6 +536,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMarketWindowRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/market/windows': {
+      id: '/api/market/windows'
+      path: '/api/market/windows'
+      fullPath: '/api/market/windows'
+      preLoaderRoute: typeof ApiMarketWindowsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/notes/deposits': {
       id: '/api/notes/deposits'
       path: '/api/notes/deposits'
@@ -596,6 +616,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMarketSeriesRoute: ApiMarketSeriesRoute,
   ApiMarketSupplyRoute: ApiMarketSupplyRoute,
   ApiMarketWindowRoute: ApiMarketWindowRoute,
+  ApiMarketWindowsRoute: ApiMarketWindowsRoute,
   ApiNotesDepositsRoute: ApiNotesDepositsRoute,
   ApiNotesLeavesRoute: ApiNotesLeavesRoute,
   ApiOrdersReceiptsRoute: ApiOrdersReceiptsRoute,

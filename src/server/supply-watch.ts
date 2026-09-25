@@ -157,12 +157,14 @@ export async function watchSupply(chainId: SupportedChainId): Promise<SupplyWatc
     {
       asset_id: number;
       baseline_supply: string | null;
+      last_supply: string | null;
+      baseline_at: Date | null;
       baseline_multiplier: string | null;
       failed_reads: number;
       drifted: boolean;
     }[]
   >`
-    select asset_id, baseline_supply, baseline_at is not null as has_baseline,
+    select asset_id, baseline_supply, last_supply, baseline_at,
            failed_reads, drifted,
            (select multiplier::text from arclite.asset_supply s
              where s.chain_id = st.chain_id and s.asset_id = st.asset_id
@@ -197,7 +199,9 @@ export async function watchSupply(chainId: SupportedChainId): Promise<SupplyWatc
     out.checked += 1;
     const prior = byId.get(assetId);
     const state: SupplyState = {
+      lastSupply: prior?.last_supply != null ? BigInt(prior.last_supply) : null,
       baselineSupply: prior?.baseline_supply != null ? BigInt(prior.baseline_supply) : null,
+      baselineAt: prior?.baseline_at ? prior.baseline_at.getTime() : null,
       baselineMultiplier:
         prior?.baseline_multiplier != null ? BigInt(prior.baseline_multiplier) : null,
       failedReads: prior?.failed_reads ?? 0,

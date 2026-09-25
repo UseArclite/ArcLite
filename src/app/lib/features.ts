@@ -61,7 +61,9 @@ export type Feature =
   /** Lit liquidity per asset, read from the public DEX on this chain. */
   | "lit-depth"
   /** #15 — The venue publishing its own alarms. */
-  | "venue-status";
+  | "venue-status"
+  /** #17 — Recent windows and what became of each. */
+  | "window-history";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be

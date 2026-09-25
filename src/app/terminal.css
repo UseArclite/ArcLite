@@ -949,3 +949,39 @@
 .dashboard[data-skin="terminal"] .venue-status {
   grid-column: 1 / -1;
 }
+
+/* ── Window history ──────────────────────────────────────────────────────
+ * Spans the grid like the status banner: it is a record of the venue, not a column of it. */
+
+.dashboard[data-skin="terminal"] .window-history {
+  grid-column: 1 / -1;
+}
+.dashboard[data-skin="terminal"] .window-history-scroll {
+  overflow-x: auto;
+}
+.dashboard[data-skin="terminal"] .window-history td b {
+  font-weight: 600;
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .window-history td small {
+  display: block;
+  margin-top: 2px;
+  font: 10px/1.3 var(--mono);
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .window-history tr.is-settled td b {
+  color: var(--t-good);
+}
+.dashboard[data-skin="terminal"] .window-history tr.is-none td b {
+  color: var(--t-warn);
+}
+.dashboard[data-skin="terminal"] .window-history tr.is-empty td b,
+.dashboard[data-skin="terminal"] .window-history tr.is-pending td b {
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .window-history a {
+  color: var(--t-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}

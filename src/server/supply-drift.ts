@@ -38,9 +38,13 @@ export interface SupplyReading {
 }
 
 export interface SupplyState {
-  /** What drift is measured against. Null before the first successful read. */
+  /** The previous reading. A step is measured against this. Null before the first read. */
+  lastSupply: bigint | null;
+  /** The longer-run anchor, refreshed on a schedule so a slow drain still has something to fail. */
   baselineSupply: bigint | null;
-  /** The multiplier when that baseline was adopted. */
+  /** When that anchor was adopted, so it can be aged out. */
+  baselineAt: number | null;
+  /** The multiplier when the anchor was adopted. */
   baselineMultiplier: bigint | null;
   /** Consecutive failed reads before this one. */
   failedReads: number;
@@ -58,14 +62,36 @@ export interface DriftVerdict {
 }
 
 /**
- * How far supply may move before it is worth stopping over.
+ * How far supply may move **in one step** before it is worth stopping over.
  *
- * Two hundred basis points is 2%. Chosen to sit clear of ordinary issuance noise while catching
- * anything that would materially change what a token represents. It is a tunable, not a truth —
- * the spec's own plan was to derive per-asset tolerances from backtests, which needs history this
- * table has not accumulated yet.
+ * This replaces a cumulative-drift check that was wrong in a way no threshold could fix. The
+ * first version compared each reading against a baseline that only moved when a corporate action
+ * explained it, so ordinary issuance accumulated until it crossed any bound you picked. Every
+ * asset would eventually trip, given enough hours — and on mainnet, 14 of 35 did, inside a day.
+ *
+ * Measured against the real thing rather than guessed: a tokenized equity's supply moves
+ * continuously as its issuer mints and burns against actual flows. Over eleven hours of
+ * minute-by-minute readings, NVDA moved 370 bps in total and never more than **55 bps in a single
+ * minute**. Gradual drift is the product working. A step change is not.
+ *
+ * So the question became "how much did this move since we last looked", and 500 bps is an order
+ * of magnitude above observed normal movement while still catching a mint that would materially
+ * change what a token represents.
  */
-export const DEFAULT_TOLERANCE_BPS = 200;
+export const STEP_TOLERANCE_BPS = 500;
+
+/**
+ * The slow-drain bound.
+ *
+ * A step check alone can be walked past: mint under the step limit every minute and the guard
+ * never fires. This is the backstop — total movement against a baseline that is deliberately
+ * rebased on a schedule rather than never. At the observed rate (~34 bps/hour) an hour of normal
+ * issuance is nowhere near it.
+ */
+export const WINDOW_TOLERANCE_BPS = 3_000;
+
+/** How long a baseline stands before it is refreshed. Long enough to bound a slow drain. */
+export const BASELINE_MAX_AGE_MS = 60 * 60_000;
 
 /**
  * How many consecutive unreadable cycles before an asset is treated as drifted.
@@ -102,36 +128,52 @@ export function assessFailure(state: SupplyState): DriftVerdict {
 export function assessSupply(
   reading: SupplyReading,
   state: SupplyState,
-  toleranceBps: number = DEFAULT_TOLERANCE_BPS,
+  now: number = Date.now(),
 ): DriftVerdict {
-  // Nothing to compare against yet. The first sight of an asset is a baseline, never a fault —
-  // otherwise every newly listed asset would be deferred on the day it arrived.
-  if (state.baselineSupply === null) {
+  // The first sight of an asset is a baseline, never a fault — otherwise every newly listed
+  // asset would be deferred on the day it arrived.
+  if (state.lastSupply === null || state.baselineSupply === null) {
     return { drifted: false, driftBps: 0, rebase: true, reason: null };
   }
 
-  const bps = driftBps(state.baselineSupply, reading.supply);
+  const step = driftBps(state.lastSupply, reading.supply);
+  const sinceBaseline = driftBps(state.baselineSupply, reading.supply);
+  const baselineStale = state.baselineAt === null || now - state.baselineAt > BASELINE_MAX_AGE_MS;
 
-  // An announced corporate action. Adopt the new supply as the baseline and say nothing: the
-  // multiplier guard already defers this asset around `effectiveAt`.
+  // An announced corporate action moves supply and the multiplier together. The multiplier guard
+  // already defers this asset around `effectiveAt`; flagging it again would defer assets for
+  // behaving correctly.
   if (state.baselineMultiplier !== null && reading.multiplier !== state.baselineMultiplier) {
-    return { drifted: false, driftBps: bps, rebase: true, reason: null };
+    return { drifted: false, driftBps: step, rebase: true, reason: null };
   }
 
-  if (Math.abs(bps) <= toleranceBps) {
-    return { drifted: false, driftBps: bps, rebase: false, reason: null };
+  const tripped =
+    Math.abs(step) > STEP_TOLERANCE_BPS || Math.abs(sinceBaseline) > WINDOW_TOLERANCE_BPS;
+
+  if (!tripped) {
+    return {
+      drifted: false,
+      driftBps: step,
+      // Age the anchor out rather than holding it forever. A baseline that never moves turns
+      // ordinary issuance into an eventual trip — which is exactly how the first version of this
+      // put 14 of 35 mainnet assets into a blackout for working normally.
+      rebase: baselineStale,
+      reason: null,
+    };
   }
 
+  const bps = Math.abs(step) > STEP_TOLERANCE_BPS ? step : sinceBaseline;
   const pct = (Math.abs(bps) / 100).toFixed(2);
+  const over = Math.abs(step) > STEP_TOLERANCE_BPS ? "in a single check" : "within the hour";
   return {
     drifted: true,
     driftBps: bps,
     // Deliberately not rebased: an unexplained move stays flagged until somebody decides it is
-    // explained. Rebasing here would clear the alarm on the next cycle all by itself.
+    // explained. Rebasing here would clear the alarm by itself on the next cycle.
     rebase: false,
     reason:
       bps > 0
-        ? `The issuer minted ${pct}% more of this token with no corporate action to explain it. What each token represents may have changed.`
-        : `The issuer burned ${pct}% of this token's supply with no corporate action to explain it. What each token represents may have changed.`,
+        ? `The issuer minted ${pct}% more of this token ${over}, with no corporate action to explain it. What each token represents may have changed.`
+        : `The issuer burned ${pct}% of this token's supply ${over}, with no corporate action to explain it. What each token represents may have changed.`,
   };
 }

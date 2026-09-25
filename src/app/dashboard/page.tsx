@@ -26,6 +26,7 @@ import { MarketChart } from "../components/market-chart";
 import { CrossingLine } from "../components/crossing-line";
 import { SupplyNotice } from "../components/supply-notice";
 import { VenueStatus } from "../components/venue-status";
+import { WindowHistory } from "../components/window-history";
 import { DisclosurePanel } from "../components/disclosure-panel";
 import { feature } from "../lib/features";
 import { SESSION_POLICY, type SessionKind } from "@/lib/chain/sessions";
@@ -559,6 +560,7 @@ export default function Dashboard() {
                 <ReceiptsPanel />
                 {feature("disclosure") && <DisclosurePanel />}
               </section>
+              {feature("window-history") && <WindowHistory />}
             </div>
           </TabsContent>
         </Tabs>

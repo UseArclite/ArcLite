@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   assessFailure,
   assessSupply,
+  BASELINE_MAX_AGE_MS,
   driftBps,
   MAX_FAILED_READS,
   type SupplyState,
@@ -18,66 +19,111 @@ import {
  */
 
 const ONE = 10n ** 18n;
+const NOW = 1_700_000_000_000;
 const base = (over: Partial<SupplyState> = {}): SupplyState => ({
+  lastSupply: 1_000_000n * ONE,
   baselineSupply: 1_000_000n * ONE,
+  baselineAt: NOW - 60_000,
   baselineMultiplier: ONE,
   failedReads: 0,
   ...over,
 });
 
+const at = (state: SupplyState, supply: bigint, multiplier = ONE) =>
+  assessSupply({ supply, multiplier }, state, NOW);
+
 describe("ordinary life", () => {
   test("no change is no drift", () => {
-    const v = assessSupply({ supply: 1_000_000n * ONE, multiplier: ONE }, base());
+    const v = at(base(), 1_000_000n * ONE);
     expect(v.drifted).toBe(false);
     expect(v.driftBps).toBe(0);
     expect(v.reason).toBeNull();
   });
 
-  test("a small move stays under the bar and does not rebase", () => {
-    // +1%, inside the 2% tolerance.
-    const v = assessSupply({ supply: 1_010_000n * ONE, multiplier: ONE }, base());
-    expect(v.drifted).toBe(false);
-    expect(v.driftBps).toBe(100);
-    // Not rebasing matters: drift is measured from a fixed point, so a slow creep of sub-tolerance
-    // moves still adds up to a trip rather than resetting the baseline each time.
-    expect(v.rebase).toBe(false);
+  test("an ordinary minute of issuance is not an event", () => {
+    // Measured, not guessed: over eleven hours of mainnet readings the largest single-minute
+    // move on NVDA was 55 bps. This is 100.
+    expect(at(base(), 1_010_000n * ONE).drifted).toBe(false);
   });
 
   test("the first sight of an asset is a baseline, not a fault", () => {
-    const v = assessSupply(
-      { supply: 5n * ONE, multiplier: ONE },
-      base({ baselineSupply: null, baselineMultiplier: null }),
+    const v = at(
+      base({ lastSupply: null, baselineSupply: null, baselineMultiplier: null }),
+      5n * ONE,
     );
     expect(v.drifted).toBe(false);
     expect(v.rebase).toBe(true);
   });
 });
 
+describe("the bug that blacked out fourteen mainnet assets", () => {
+  /**
+   * The first version measured against a baseline that only moved when a corporate action
+   * explained it. Ordinary issuance therefore accumulated until it crossed any threshold — a
+   * day of normal minting put 14 of 35 assets into an on-chain blackout for working correctly.
+   *
+   * These pin the fix: normal drift must stay quiet indefinitely, and the anchor must age out.
+   */
+  test("a day of normal issuance never trips", () => {
+    // 34 bps an hour, the observed mainnet rate, for 24 hours — 816 bps in total, far past the
+    // old 200 bps bound and comfortably inside this one.
+    let supply = 1_000_000n * ONE;
+    let state = base();
+    for (let minute = 0; minute < 24 * 60; minute++) {
+      // A little under a basis point a minute, drifting one way all day.
+      const next = supply + supply / 20_000n;
+      const now = NOW + minute * 60_000;
+      const v = assessSupply({ supply: next, multiplier: ONE }, state, now);
+      expect(v.drifted).toBe(false);
+      state = {
+        ...state,
+        lastSupply: next,
+        baselineSupply: v.rebase ? next : state.baselineSupply,
+        baselineAt: v.rebase ? now : state.baselineAt,
+      };
+      supply = next;
+    }
+  });
+
+  test("the anchor ages out rather than standing forever", () => {
+    const stale = base({ baselineAt: NOW - BASELINE_MAX_AGE_MS - 1 });
+    expect(at(stale, 1_000_100n * ONE).rebase).toBe(true);
+    const fresh = base({ baselineAt: NOW - 1000 });
+    expect(at(fresh, 1_000_100n * ONE).rebase).toBe(false);
+  });
+});
+
 describe("the event worth stopping for", () => {
-  test("an unexplained mint trips the breaker", () => {
-    const v = assessSupply({ supply: 1_100_000n * ONE, multiplier: ONE }, base());
+  test("a sudden mint trips the breaker", () => {
+    const v = at(base(), 1_100_000n * ONE);
     expect(v.drifted).toBe(true);
     expect(v.driftBps).toBe(1000);
     expect(v.reason).toContain("minted 10.00%");
+    expect(v.reason).toContain("in a single check");
   });
 
-  test("an unexplained burn trips it too", () => {
-    const v = assessSupply({ supply: 900_000n * ONE, multiplier: ONE }, base());
+  test("a sudden burn trips it too", () => {
+    const v = at(base(), 900_000n * ONE);
     expect(v.drifted).toBe(true);
-    expect(v.driftBps).toBe(-1000);
     expect(v.reason).toContain("burned 10.00%");
   });
 
+  test("a slow drain under the step limit still trips on the hour", () => {
+    // The reason a step check alone is not enough: mint just under the per-check bound every
+    // minute and nothing would ever fire. The anchor catches it.
+    const state = base({ lastSupply: 1_300_000n * ONE, baselineAt: NOW - 60_000 });
+    const v = at(state, 1_340_000n * ONE);
+    expect(v.drifted).toBe(true);
+    expect(v.reason).toContain("within the hour");
+  });
+
   test("a tripped asset does not rebase itself quiet", () => {
-    // If it rebased, the next cycle would compare against the new supply, find no change, and
-    // clear the alarm on its own. Nobody would ever see it.
-    expect(assessSupply({ supply: 2_000_000n * ONE, multiplier: ONE }, base()).rebase).toBe(false);
+    // If it rebased, the next cycle would find no change and clear the alarm on its own.
+    expect(at(base(), 2_000_000n * ONE).rebase).toBe(false);
   });
 
   test("a corporate action explains a supply change and rebases instead", () => {
-    // A split moves supply and the multiplier together. The multiplier guard already defers this
-    // asset around effectiveAt; flagging it here would defer assets for behaving correctly.
-    const v = assessSupply({ supply: 2_000_000n * ONE, multiplier: 2n * ONE }, base());
+    const v = at(base(), 2_000_000n * ONE, 2n * ONE);
     expect(v.drifted).toBe(false);
     expect(v.rebase).toBe(true);
     expect(v.reason).toBeNull();
