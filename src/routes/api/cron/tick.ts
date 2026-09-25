@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { resolveChainId } from "@/lib/chain/chains";
 import { hasDb, recordRun, releaseLock, tryLock } from "@/server/db";
 import { advanceWindows } from "@/server/windows";
+import { enforceDrift } from "@/server/supply-watch";
 import { syncWindowsToChain } from "@/server/chain-windows";
 import { matchPricedWindows, revealSealedWindows } from "@/server/pipeline";
 import { settleMatchedWindows } from "@/server/settle";
@@ -38,6 +39,20 @@ export const Route = createFileRoute("/api/cron/tick")({
           const windowSeconds = Number(process.env.ARCLITE_WINDOW_SECONDS ?? 300);
           const epochSeconds = Number(process.env.ARCLITE_EPOCH_SECONDS ?? 3600);
           const result = await advanceWindows(chainId, windowSeconds, epochSeconds);
+
+          // Stop any asset whose supply moved unexplained, before this tick prices a window.
+          //
+          // Ordering matters: the oracle cron detects the drift and records it, and this puts it
+          // on chain ahead of `commitWindow`, so the blackout is already in the calendar when
+          // `PriceCommitter` reads it. Detecting after pricing would let one more window cross an
+          // asset we had already decided was unsafe.
+          //
+          // Here rather than in the oracle cron because this sends a transaction, and every
+          // transaction this venue sends comes from one account behind one lease.
+          const drift = await enforceDrift(chainId).catch((e: Error) => ({
+            scheduled: [],
+            errors: [e.message],
+          }));
 
           // Reveal before the chain seal: sealing needs the orders root, and the orders root
           // only exists once the book has been decrypted. A window whose key is gone reveals
@@ -106,6 +121,7 @@ export const Route = createFileRoute("/api/cron/tick")({
             chain,
             match,
             settle,
+            drift,
             ms: Date.now() - started,
           };
           await recordRun("tick", holder, true, actions as never);

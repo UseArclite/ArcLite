@@ -311,3 +311,109 @@ export async function driftedAssets(
     since: r.updated_at.toISOString(),
   }));
 }
+
+/**
+ * Turn a drift verdict into something the contract enforces.
+ *
+ * Detection alone changes nothing. Deferral on this venue is decided **on chain** by
+ * `PriceCommitter`, which computes `deferMask` itself from oracle state and the `EventCalendar`;
+ * the matcher never asserts a deferral and the circuit constrains the mask. A row in our database
+ * saying "drifted" would be a warning label on a door that still opens.
+ *
+ * `EventCalendar.scheduleBlackout` is the door. The relayer holds `CALENDAR_ROLE`, granted
+ * deliberately rather than pointing a cron at the deployer key, and it is the smallest privilege
+ * that does this job: a blackout stops an asset crossing and does nothing else. It cannot move
+ * funds, change the registry or touch the pool — and `unshield` has no pause, no role and no
+ * window check, so even a compromised keeper can halt trading without trapping anybody's money.
+ *
+ * ## Why the blackout is short, and re-scheduled
+ *
+ * A blackout carries an end time. Scheduling one far ahead would mean a drift that resolves — an
+ * issuer completing a corporate action, say — leaves the asset frozen until somebody remembers to
+ * clear it. Each pass instead extends the window a little past the next pass: a drift that
+ * persists stays enforced, and one that clears expires on its own within minutes. The database is
+ * the memory; the chain only has to hold the next few minutes.
+ *
+ * Called from the tick, never the oracle cron. Every transaction this venue sends comes from one
+ * account behind one lease, and two crons sending concurrently collide on the nonce.
+ */
+const calendarAbi = [
+  {
+    type: "function",
+    name: "scheduleBlackout",
+    stateMutability: "nonpayable",
+    inputs: [{ type: "uint16" }, { type: "uint64" }, { type: "uint64" }, { type: "uint8" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "isBlackout",
+    stateMutability: "view",
+    inputs: [{ type: "uint16" }, { type: "uint64" }],
+    outputs: [{ type: "bool" }],
+  },
+] as const;
+
+/**
+ * `EventCalendar.REASON_MANUAL`.
+ *
+ * The contract's reason codes predate this guard and there is no supply-drift member. Reusing
+ * `MANUAL` rather than redeploying an immutable contract for an enum entry is the right trade —
+ * the reason a trader reads comes from `asset_supply_state`, and the chain only needs to know
+ * that the asset is blacked out, not why.
+ */
+const REASON_MANUAL = 4;
+
+/** How far ahead a blackout reaches: comfortably past the next tick, not so far it outlives its cause. */
+const BLACKOUT_SECONDS = 15 * 60;
+
+export interface EnforceResult {
+  scheduled: number[];
+  errors: string[];
+}
+
+export async function enforceDrift(chainId: SupportedChainId): Promise<EnforceResult> {
+  const out: EnforceResult = { scheduled: [], errors: [] };
+  const calendar = ARCLITE[chainId].eventCalendar as Address | undefined;
+  if (!calendar) return out;
+
+  const drifted = await driftedAssets(chainId);
+  if (drifted.length === 0) return out;
+
+  let r;
+  try {
+    const { relayer } = await import("./relayer");
+    r = relayer();
+  } catch (error) {
+    // The mainnet key policy lands here. Detection and the API keep working; enforcement does
+    // not, and reporting that is better than a silent no-op on a safety control.
+    out.errors.push(`relayer unavailable: ${(error as Error).message}`);
+    return out;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  for (const { assetId } of drifted) {
+    try {
+      // Already covered for the moment the next tick will ask about. Re-scheduling every minute
+      // would spend gas to say the same thing.
+      const covered = await r.read.readContract({
+        address: calendar,
+        abi: calendarAbi,
+        functionName: "isBlackout",
+        args: [assetId, BigInt(now + 120)],
+      });
+      if (covered) continue;
+
+      await r.send({
+        address: calendar,
+        abi: calendarAbi,
+        functionName: "scheduleBlackout",
+        args: [assetId, BigInt(now), BigInt(now + BLACKOUT_SECONDS), REASON_MANUAL],
+      });
+      out.scheduled.push(assetId);
+    } catch (error) {
+      out.errors.push(`asset ${assetId}: ${(error as Error).message}`);
+    }
+  }
+  return out;
+}

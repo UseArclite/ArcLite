@@ -24,6 +24,7 @@ import { SettlementWatch } from "../components/settlement-watch";
 import { PrivacyMeter } from "../components/privacy-meter";
 import { MarketChart } from "../components/market-chart";
 import { CrossingLine } from "../components/crossing-line";
+import { SupplyNotice } from "../components/supply-notice";
 import { DisclosurePanel } from "../components/disclosure-panel";
 import { feature } from "../lib/features";
 import { SESSION_POLICY, type SessionKind } from "@/lib/chain/sessions";
@@ -476,6 +477,11 @@ export default function Dashboard() {
                     ))}
                   </ul>
                 )}
+                {/* Above the general guard line: when an issuer has minted or burned unexpectedly
+                    that outranks every other reason this panel can give, and it arrives on chain
+                    wearing the calendar's `EVENT_WINDOW` label, which reads as a routine
+                    corporate action. */}
+                <SupplyNotice symbol={asset} />
                 <div className={"guard-result " + (blocked ? "deferred" : "")} role="status">
                   <Info size={16} />
                   <span>
