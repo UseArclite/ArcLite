@@ -884,3 +884,68 @@
   color: var(--t-accent);
   opacity: 0.9;
 }
+
+/* ── Venue status ────────────────────────────────────────────────────────
+ * Five readings, and paragraphs only where something is wrong. A healthy venue should be
+ * scannable in a second; a degraded one should be impossible to misread. */
+
+.dashboard[data-skin="terminal"] .venue-status-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  background: var(--t-line-soft);
+  border: 1px solid var(--t-line-soft);
+}
+.dashboard[data-skin="terminal"] .venue-status-rows li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  padding: 9px 11px;
+  background: var(--t-panel);
+  font: 11px/1.4 var(--mono);
+}
+.dashboard[data-skin="terminal"] .venue-status-label {
+  color: var(--t-dim);
+  letter-spacing: 0.04em;
+}
+.dashboard[data-skin="terminal"] .venue-status-value {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-variant-numeric: tabular-nums;
+  color: var(--t-text);
+  text-align: right;
+}
+/* The state dot. Colour is never the only signal — the reading next to it says the same thing. */
+.dashboard[data-skin="terminal"] .venue-status-value i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--t-good);
+  flex-shrink: 0;
+}
+.dashboard[data-skin="terminal"] li.is-warn .venue-status-value i {
+  background: var(--t-warn);
+}
+.dashboard[data-skin="terminal"] li.is-down .venue-status-value i {
+  background: var(--t-bad);
+}
+.dashboard[data-skin="terminal"] li.is-warn .venue-status-value {
+  color: var(--t-warn);
+}
+.dashboard[data-skin="terminal"] li.is-down .venue-status-value {
+  color: var(--t-bad);
+}
+.dashboard[data-skin="terminal"] .venue-status-rows small {
+  grid-column: 1 / -1;
+  margin-top: 3px;
+  font: 10px/1.55 var(--mono);
+  color: var(--t-dim);
+}
+/* The status banner belongs across the top of the proofs grid, not in one of its columns —
+ * inserted as a grid child it took the solvency panel's slot and pushed it below the heading. */
+.dashboard[data-skin="terminal"] .venue-status {
+  grid-column: 1 / -1;
+}

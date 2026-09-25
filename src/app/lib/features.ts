@@ -59,7 +59,9 @@ export type Feature =
   /** #11 — The four steps to a first trade, with the current one marked. */
   | "first-run"
   /** Lit liquidity per asset, read from the public DEX on this chain. */
-  | "lit-depth";
+  | "lit-depth"
+  /** #15 — The venue publishing its own alarms. */
+  | "venue-status";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be

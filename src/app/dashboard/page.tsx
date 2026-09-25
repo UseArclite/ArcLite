@@ -25,6 +25,7 @@ import { PrivacyMeter } from "../components/privacy-meter";
 import { MarketChart } from "../components/market-chart";
 import { CrossingLine } from "../components/crossing-line";
 import { SupplyNotice } from "../components/supply-notice";
+import { VenueStatus } from "../components/venue-status";
 import { DisclosurePanel } from "../components/disclosure-panel";
 import { feature } from "../lib/features";
 import { SESSION_POLICY, type SessionKind } from "@/lib/chain/sessions";
@@ -512,6 +513,10 @@ export default function Dashboard() {
           </TabsContent>
           <TabsContent value="proofs">
             <div className="proofs-grid">
+              {/* First child so it spans the top of the grid: whether the venue is running at
+                  all comes before whether its books balance, and inserted later it took the
+                  solvency panel's column instead. */}
+              {feature("venue-status") && <VenueStatus />}
               <section className="proof-orbit-panel">
                 <span className="eyebrow">{t("PUBLIC ACCOUNTABILITY")}</span>
                 <div className="proof-engraving">

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { db, hasDb } from "@/server/db";
-import { cronConfigured } from "@/server/cron-auth";
+import { authorizeCron, cronConfigured } from "@/server/cron-auth";
 
 /**
  * Liveness and dependency check.
@@ -15,7 +15,7 @@ const RPC_URLS: Record<number, string> = {
   46630: "https://rpc.testnet.chain.robinhood.com",
 };
 
-async function checkRpc(chainId: number) {
+export async function checkRpc(chainId: number) {
   const url = RPC_URLS[chainId];
   if (!url) return { ok: false, error: `unknown chainId ${chainId}` };
   const started = Date.now();
@@ -74,7 +74,7 @@ const BURN_TRADING_ETH_DAY = 0.0092;
 /** Days, to two places. An estimate carrying twelve decimals reads as a measurement. */
 const round2 = (n: number) => (Number.isFinite(n) ? Math.round(n * 100) / 100 : 0);
 
-async function checkRelayerGas(): Promise<{
+export async function checkRelayerGas(): Promise<{
   address?: string;
   balanceWei?: string;
   runwayDays?: number;
@@ -154,7 +154,7 @@ async function checkRelayerGas(): Promise<{
  * Database reachability plus how far behind the oracle poller is. `lagSeconds` is the only alarm
  * for a silently skipped cron — Vercel Cron is best-effort and reports nothing when it misses.
  */
-async function checkDb() {
+export async function checkDb() {
   if (!hasDb()) return { ok: null as boolean | null, note: "DATABASE_URL not set" };
   const started = Date.now();
   try {
@@ -199,7 +199,7 @@ async function checkDb() {
  * never settle. It is invisible from either side alone — both look healthy — which is exactly why
  * it belongs in the health check rather than a dashboard.
  */
-async function checkWindowChain() {
+export async function checkWindowChain() {
   if (!hasDb()) return { ok: null as boolean | null, note: "DATABASE_URL not set" };
   try {
     const sql = db();
@@ -238,8 +238,16 @@ async function checkWindowChain() {
 export const Route = createFileRoute("/api/health")({
   server: {
     handlers: {
-      GET: async () => {
+      GET: async ({ request }) => {
         const chainId = Number(process.env.ARCLITE_CHAIN_ID ?? 46630);
+        // The operator's half of this answer is intelligence, not disclosure: the relayer's
+        // address, its balance, its runway in days and whether its key is hot together say
+        // exactly when this venue stalls and what to watch for. It was reachable from the open
+        // internet. It is not any more.
+        //
+        // The liveness half stays public, because an uptime monitor needs it and a deploy check
+        // reads `commit`. `/api/status` is the version built for traders.
+        const trusted = authorizeCron(request).ok;
         const [chain, dbStatus, relayer] = await Promise.all([
           checkRpc(chainId),
           checkDb(),
@@ -252,9 +260,17 @@ export const Route = createFileRoute("/api/health")({
           stage: process.env.ARCLITE_STAGE ?? "preview",
           chainId,
           chain,
-          db: dbStatus,
-          relayer,
-          window: await checkWindowChain(),
+          db: trusted ? dbStatus : { ok: dbStatus.ok, oracleLagSeconds: dbStatus.oracleLagSeconds },
+          relayer: trusted
+            ? relayer
+            : // Enough to alarm on, nothing to time an outage with.
+              { canSign: relayer.canSign, low: relayer.low },
+          window: trusted
+            ? await checkWindowChain()
+            : await checkWindowChain().then((w) => ({
+                ok: w.ok,
+                depositsBlockedByStuckWindow: w.depositsBlockedByStuckWindow,
+              })),
           // A deployment that lost CRON_SECRET now refuses to run scheduled work rather than
           // running it for anyone, which is the safe direction and a silent one: the venue simply
           // stops advancing. This is where that becomes visible.

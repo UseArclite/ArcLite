@@ -16,6 +16,7 @@ import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ProofsRouteImport } from './routes/proofs'
 import { Route as ProtocolRouteImport } from './routes/protocol'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiStatusRouteImport } from './routes/api/status'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthNonceRouteImport } from './routes/api/auth/nonce'
 import { Route as ApiAuthSessionRouteImport } from './routes/api/auth/session'
@@ -69,6 +70,11 @@ const ProtocolRoute = ProtocolRouteImport.update({
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStatusRoute = ApiStatusRouteImport.update({
+  id: '/api/status',
+  path: '/api/status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
@@ -175,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/proofs': typeof ProofsRoute
   '/protocol': typeof ProtocolRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/status': typeof ApiStatusRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/nonce': typeof ApiAuthNonceRoute
   '/api/auth/session': typeof ApiAuthSessionRoute
@@ -203,6 +210,7 @@ export interface FileRoutesByTo {
   '/proofs': typeof ProofsRoute
   '/protocol': typeof ProtocolRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/status': typeof ApiStatusRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/nonce': typeof ApiAuthNonceRoute
   '/api/auth/session': typeof ApiAuthSessionRoute
@@ -232,6 +240,7 @@ export interface FileRoutesById {
   '/proofs': typeof ProofsRoute
   '/protocol': typeof ProtocolRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/status': typeof ApiStatusRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/nonce': typeof ApiAuthNonceRoute
   '/api/auth/session': typeof ApiAuthSessionRoute
@@ -262,6 +271,7 @@ export interface FileRouteTypes {
     | '/proofs'
     | '/protocol'
     | '/api/health'
+    | '/api/status'
     | '/api/auth/logout'
     | '/api/auth/nonce'
     | '/api/auth/session'
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/proofs'
     | '/protocol'
     | '/api/health'
+    | '/api/status'
     | '/api/auth/logout'
     | '/api/auth/nonce'
     | '/api/auth/session'
@@ -318,6 +329,7 @@ export interface FileRouteTypes {
     | '/proofs'
     | '/protocol'
     | '/api/health'
+    | '/api/status'
     | '/api/auth/logout'
     | '/api/auth/nonce'
     | '/api/auth/session'
@@ -347,6 +359,7 @@ export interface RootRouteChildren {
   ProofsRoute: typeof ProofsRoute
   ProtocolRoute: typeof ProtocolRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiStatusRoute: typeof ApiStatusRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthNonceRoute: typeof ApiAuthNonceRoute
   ApiAuthSessionRoute: typeof ApiAuthSessionRoute
@@ -417,6 +430,13 @@ declare module '@tanstack/react-router' {
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/status': {
+      id: '/api/status'
+      path: '/api/status'
+      fullPath: '/api/status'
+      preLoaderRoute: typeof ApiStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/logout': {
@@ -563,6 +583,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProofsRoute: ProofsRoute,
   ProtocolRoute: ProtocolRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiStatusRoute: ApiStatusRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthNonceRoute: ApiAuthNonceRoute,
   ApiAuthSessionRoute: ApiAuthSessionRoute,
