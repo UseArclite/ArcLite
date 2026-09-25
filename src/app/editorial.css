@@ -22,6 +22,9 @@
 .venue-status{grid-column:1 / -1}
 .window-history{grid-column:1 / -1}
 .activity-ledger{margin-top:16px}
+.preflight-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.preflight-shortfall{font:10px/1.4 var(--sans);color:#545375}
+.preflight-shortfall b{color:#080842}
 .activity-scroll{overflow-x:auto;max-height:420px;overflow-y:auto}
 .activity-ledger table{width:100%;border-collapse:collapse;font:11px/1.4 var(--sans)}
 .activity-ledger th{text-align:right;font:10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:#545375;padding:6px 9px;border-bottom:1px solid #08084233}

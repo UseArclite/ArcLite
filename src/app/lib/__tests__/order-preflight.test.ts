@@ -222,3 +222,62 @@ describe("preflight — input handling", () => {
     expect(result.ok).toBe(false);
   });
 });
+
+/**
+ * The suggestions have to be takeable.
+ *
+ * A pre-flight that says "deposit $232.98" and then refuses the order after somebody deposits
+ * exactly $232.98 is worse than one that says nothing: it spends the user's money and their trust
+ * to deliver the same refusal. The two figures round in opposite directions — the shortfall up,
+ * the affordable quantity down — and the cost they are checked against rounds up again, so the
+ * boundary is precisely where a click lands.
+ */
+describe("the suggestions on an unaffordable buy", () => {
+  const short = () => buy(ONE_SHARE, [note("1", "1000000")]);
+
+  test("both figures are returned, not only described in prose", () => {
+    const r = short();
+    expect(r.ok).toBe(false);
+    expect(r.shortfallRaw).toBeGreaterThan(0n);
+    expect(r.affordableRaw).toBeGreaterThanOrEqual(0n);
+  });
+
+  test("depositing exactly the shortfall makes the same order pass", () => {
+    const r = short();
+    const funded = 1_000000n + r.shortfallRaw!;
+    expect(buy(ONE_SHARE, [note("1", funded.toString())]).ok).toBe(true);
+  });
+
+  test("one unit less than the shortfall still fails", () => {
+    // Pins the ceiling. If the shortfall rounded down this would pass and the figure would be
+    // arbitrary rather than minimal.
+    const r = short();
+    const under = 1_000000n + r.shortfallRaw! - 1n;
+    expect(buy(ONE_SHARE, [note("1", under.toString())]).ok).toBe(false);
+  });
+
+  test("ordering exactly the affordable quantity passes with the note already held", () => {
+    const r = short();
+    expect(buy(r.affordableRaw!, [note("1", "1000000")]).ok).toBe(true);
+  });
+
+  test("one unit more than the affordable quantity fails", () => {
+    const r = short();
+    expect(buy(r.affordableRaw! + 1n, [note("1", "1000000")]).ok).toBe(false);
+  });
+
+  test("holds across a spread of note sizes and order sizes", () => {
+    // The off-by-one only shows at particular ratios, so sweep rather than trust one case.
+    for (const held of [1_000000n, 7_777777n, 250_000000n, 999_999999n]) {
+      for (const want of [ONE_SHARE / 10n, ONE_SHARE, 13n * ONE_SHARE]) {
+        const r = buy(want, [note("1", held.toString())]);
+        if (r.ok) continue;
+        if (r.affordableRaw! > 0n) {
+          expect(buy(r.affordableRaw!, [note("1", held.toString())]).ok).toBe(true);
+        }
+        const funded = held + r.shortfallRaw!;
+        expect(buy(want, [note("1", funded.toString())]).ok).toBe(true);
+      }
+    }
+  });
+});

@@ -66,6 +66,22 @@ export interface PreflightResult<N extends PreflightNote = PreflightNote> {
   reason?: string;
   /** True when the numbers are an estimate rather than the committed reference. */
   estimated?: boolean;
+  /**
+   * On an unaffordable buy: extra quote units that would make this order placeable.
+   *
+   * **Rounded up.** A suggestion that lands a single raw unit short is worse than no suggestion —
+   * somebody deposits the number they were given, tries again, and is refused a second time by a
+   * venue that told them what to do.
+   */
+  shortfallRaw?: bigint;
+  /**
+   * On an unaffordable buy: the largest quantity the existing note does cover.
+   *
+   * **Rounded down**, and then verified to actually clear the headroom check, because the cost of
+   * a floored quantity is itself computed with a ceiling — the two roundings work against each
+   * other and the boundary case is exactly where somebody clicks.
+   */
+  affordableRaw?: bigint;
 }
 
 /**
@@ -163,14 +179,31 @@ export function preflight<N extends PreflightNote>(input: PreflightInput<N>): Pr
     // What would fix it, not only what is wrong. "A note is spent whole" is a genuinely
     // surprising rule — people expect balances, not notes — so leaving the arithmetic to the
     // reader is leaving them stuck.
-    const short = (costRaw * HEADROOM_PERCENT) / 100n - held;
-    const affordable =
-      (held * 100n * 10n ** BigInt(base.decimals + 18 - quote.decimals)) /
-      (HEADROOM_PERCENT * refE18);
+    // Ceiling: a shortfall that rounds down leaves the deposit one unit short of sufficient.
+    const needed = costRaw * HEADROOM_PERCENT;
+    const short = needed / 100n + (needed % 100n === 0n ? 0n : 1n) - held;
+
+    // Solved rather than searched.
+    //
+    // Dividing the note straight through by the reference looks right and is not: the cost of a
+    // quantity is rounded *up*, so the quotient can cost a few quote units more than the note
+    // covers. Stepping back one raw unit at a time cannot fix that either — one unit of an
+    // 18-decimal asset is 10^-18 of a share, and the overshoot here was 86 quote units, which is
+    // eleven orders of magnitude further than any small loop would walk.
+    //
+    // So work backwards from the largest cost the note can clear. `cost` is an integer, and the
+    // check is `held × 100 ≥ cost × 102`, so the most a buy may cost is `floor(held × 100 / 102)`.
+    // Any quantity with `q × ref ≤ maxCost × scale` ceils to at most that, which makes
+    // `floor(maxCost × scale / ref)` the exact maximum — no loop, no epsilon, no boundary case.
+    const scale = 10n ** BigInt(base.decimals + 18 - quote.decimals);
+    const maxCost = (held * 100n) / HEADROOM_PERCENT;
+    const affordable = (maxCost * scale) / refE18;
     return {
       ok: false,
       note,
       costRaw,
+      shortfallRaw: short > 0n ? short : 0n,
+      affordableRaw: affordable > 0n ? affordable : 0n,
       reason:
         `That buy costs about ${fmt(costRaw)} at the reference showing now, and your largest ` +
         `${quote.symbol} note holds ${fmt(held)}. A note is spent whole, so one note has to cover ` +

@@ -8,7 +8,7 @@ import { clientDeployment } from "@/lib/chain/chains";
 import { cash } from "../lib/format";
 import { feature } from "../lib/features";
 import { AmountField } from "./amount-field";
-import { displayAmount } from "../lib/units";
+import { displayAmount, formatAmount } from "../lib/units";
 import { Detail } from "./panel-detail";
 import { useT } from "../lib/i18n";
 
@@ -192,7 +192,34 @@ export function SealedOrderPanel() {
               </p>
             </>
           ) : (
-            <p>{check.reason}</p>
+            <>
+              <p>{check.reason}</p>
+              {/* The arithmetic was already in the sentence; this makes it takeable. A pre-flight
+                  that tells somebody the number and then leaves them to retype it is asking them
+                  to do the one step it just proved they should not have to. */}
+              {feature("sizing-actions") && check.affordableRaw != null && (
+                <div className="preflight-actions">
+                  {check.affordableRaw > 0n && (
+                    <button
+                      className="reset-demo"
+                      onClick={() => {
+                        setUnits(check.affordableRaw!.toString());
+                        setTyped(formatAmount(check.affordableRaw!, baseAsset?.decimals ?? 18));
+                      }}
+                    >
+                      {t("Order")} {shares(check.affordableRaw)} {baseAsset?.symbol ?? ""}{" "}
+                      {t("instead")}
+                    </button>
+                  )}
+                  {check.shortfallRaw != null && check.shortfallRaw > 0n && (
+                    <span className="preflight-shortfall">
+                      {t("or deposit")} <b>{money(check.shortfallRaw)}</b> {t("more")}{" "}
+                      {quoteAsset?.symbol ?? ""}
+                    </span>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

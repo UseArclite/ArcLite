@@ -1025,3 +1025,20 @@
   align-items: center;
   gap: 4px;
 }
+
+/* The pre-flight's suggestion, as a control rather than a sentence. */
+.dashboard[data-skin="terminal"] .preflight-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.dashboard[data-skin="terminal"] .preflight-shortfall {
+  font: 10px/1.4 var(--mono);
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .preflight-shortfall b {
+  color: var(--t-text);
+  font-variant-numeric: tabular-nums;
+}

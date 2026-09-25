@@ -65,7 +65,9 @@ export type Feature =
   /** #17 — Recent windows and what became of each. */
   | "window-history"
   /** #19 — Everything this vault has done, rebuilt from its own keys. */
-  | "activity-ledger";
+  | "activity-ledger"
+  /** #14 — Make the pre-flight's suggested size one click. */
+  | "sizing-actions";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be
