@@ -25,6 +25,7 @@ import { Route as ApiCronTickRouteImport } from './routes/api/cron/tick'
 import { Route as ApiMarketAssetsRouteImport } from './routes/api/market/assets'
 import { Route as ApiMarketCrossingRouteImport } from './routes/api/market/crossing'
 import { Route as ApiMarketSeriesRouteImport } from './routes/api/market/series'
+import { Route as ApiMarketSupplyRouteImport } from './routes/api/market/supply'
 import { Route as ApiMarketWindowRouteImport } from './routes/api/market/window'
 import { Route as ApiNotesDepositsRouteImport } from './routes/api/notes/deposits'
 import { Route as ApiNotesLeavesRouteImport } from './routes/api/notes/leaves'
@@ -114,6 +115,11 @@ const ApiMarketSeriesRoute = ApiMarketSeriesRouteImport.update({
   path: '/api/market/series',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMarketSupplyRoute = ApiMarketSupplyRouteImport.update({
+  id: '/api/market/supply',
+  path: '/api/market/supply',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMarketWindowRoute = ApiMarketWindowRouteImport.update({
   id: '/api/market/window',
   path: '/api/market/window',
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/api/market/assets': typeof ApiMarketAssetsRoute
   '/api/market/crossing': typeof ApiMarketCrossingRoute
   '/api/market/series': typeof ApiMarketSeriesRoute
+  '/api/market/supply': typeof ApiMarketSupplyRoute
   '/api/market/window': typeof ApiMarketWindowRoute
   '/api/notes/deposits': typeof ApiNotesDepositsRoute
   '/api/notes/leaves': typeof ApiNotesLeavesRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/api/market/assets': typeof ApiMarketAssetsRoute
   '/api/market/crossing': typeof ApiMarketCrossingRoute
   '/api/market/series': typeof ApiMarketSeriesRoute
+  '/api/market/supply': typeof ApiMarketSupplyRoute
   '/api/market/window': typeof ApiMarketWindowRoute
   '/api/notes/deposits': typeof ApiNotesDepositsRoute
   '/api/notes/leaves': typeof ApiNotesLeavesRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/api/market/assets': typeof ApiMarketAssetsRoute
   '/api/market/crossing': typeof ApiMarketCrossingRoute
   '/api/market/series': typeof ApiMarketSeriesRoute
+  '/api/market/supply': typeof ApiMarketSupplyRoute
   '/api/market/window': typeof ApiMarketWindowRoute
   '/api/notes/deposits': typeof ApiNotesDepositsRoute
   '/api/notes/leaves': typeof ApiNotesLeavesRoute
@@ -253,6 +262,7 @@ export interface FileRouteTypes {
     | '/api/market/assets'
     | '/api/market/crossing'
     | '/api/market/series'
+    | '/api/market/supply'
     | '/api/market/window'
     | '/api/notes/deposits'
     | '/api/notes/leaves'
@@ -279,6 +289,7 @@ export interface FileRouteTypes {
     | '/api/market/assets'
     | '/api/market/crossing'
     | '/api/market/series'
+    | '/api/market/supply'
     | '/api/market/window'
     | '/api/notes/deposits'
     | '/api/notes/leaves'
@@ -305,6 +316,7 @@ export interface FileRouteTypes {
     | '/api/market/assets'
     | '/api/market/crossing'
     | '/api/market/series'
+    | '/api/market/supply'
     | '/api/market/window'
     | '/api/notes/deposits'
     | '/api/notes/leaves'
@@ -332,6 +344,7 @@ export interface RootRouteChildren {
   ApiMarketAssetsRoute: typeof ApiMarketAssetsRoute
   ApiMarketCrossingRoute: typeof ApiMarketCrossingRoute
   ApiMarketSeriesRoute: typeof ApiMarketSeriesRoute
+  ApiMarketSupplyRoute: typeof ApiMarketSupplyRoute
   ApiMarketWindowRoute: typeof ApiMarketWindowRoute
   ApiNotesDepositsRoute: typeof ApiNotesDepositsRoute
   ApiNotesLeavesRoute: typeof ApiNotesLeavesRoute
@@ -456,6 +469,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMarketSeriesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/market/supply': {
+      id: '/api/market/supply'
+      path: '/api/market/supply'
+      fullPath: '/api/market/supply'
+      preLoaderRoute: typeof ApiMarketSupplyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/market/window': {
       id: '/api/market/window'
       path: '/api/market/window'
@@ -532,6 +552,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMarketAssetsRoute: ApiMarketAssetsRoute,
   ApiMarketCrossingRoute: ApiMarketCrossingRoute,
   ApiMarketSeriesRoute: ApiMarketSeriesRoute,
+  ApiMarketSupplyRoute: ApiMarketSupplyRoute,
   ApiMarketWindowRoute: ApiMarketWindowRoute,
   ApiNotesDepositsRoute: ApiNotesDepositsRoute,
   ApiNotesLeavesRoute: ApiNotesLeavesRoute,

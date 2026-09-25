@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { resolveChainId } from "@/lib/chain/chains";
 import { hasDb, recordRun, releaseLock, tryLock } from "@/server/db";
 import { syncPrices, syncRegistry } from "@/server/sync";
+import { watchSupply } from "@/server/supply-watch";
 import { authorizeCron } from "@/server/cron-auth";
 
 /**
@@ -51,6 +52,21 @@ export const Route = createFileRoute("/api/cron/oracle")({
           const registry = refreshRegistry ? await syncRegistry(chainId) : { assets: 0, feeds: 0 };
           const prices = await syncPrices(chainId);
 
+          // What the issuers did to their own tokens. A read-only pass over the registry —
+          // roughly 70 RPC calls for 35 assets, well inside this route's budget — and it never
+          // sends a transaction, so it cannot collide with the tick's nonce.
+          //
+          // Its failures are collected rather than thrown: a supply check that cannot reach an
+          // RPC must not take price and guard syncing down with it, and the watcher records its
+          // own failed reads so that not being able to check still fails closed per asset.
+          const supply = await watchSupply(chainId).catch((e: Error) => ({
+            checked: 0,
+            recorded: 0,
+            tripped: [],
+            cleared: [],
+            errors: [e.message],
+          }));
+
           const actions = {
             chainId,
             registryRefreshed: refreshRegistry,
@@ -58,6 +74,12 @@ export const Route = createFileRoute("/api/cron/oracle")({
             feeds: registry.feeds,
             observations: prices.observations,
             guards: prices.guards,
+            supplyChecked: supply.checked,
+            // Scalars only: `recordRun` stores a flat record. The ids are the useful part in a
+            // run log, and the wording lives in `asset_supply_state` and on the API.
+            supplyTripped: supply.tripped.map((t) => t.assetId).join(",") || null,
+            supplyCleared: supply.cleared.join(",") || null,
+            supplyErrors: supply.errors.length,
             ms: Date.now() - started,
           };
           await recordRun("oracle", holder, true, actions);
