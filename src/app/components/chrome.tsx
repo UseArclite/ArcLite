@@ -16,11 +16,15 @@ const socialLinks: Record<string, string> = {
   X: "https://x.com/UseArclite",
   GitHub: "https://github.com/UseArclite/ArcLite",
   Telegram: "https://t.me/arcliteonrobinhood",
+  // Canonical listing URL. The link as issued carried `utm_campaign`/`utm_medium`/`utm_source`
+  // from the approval email — those attribute that email's own traffic, so republishing them
+  // would file every visitor from this site under a campaign they were never part of.
+  CoinGecko: "https://www.coingecko.com/en/coins/arclite",
 };
 export function Socials({ onSelect }: { onSelect: (name: string) => void }) {
   return (
     <div className="socials">
-      {["X", "GitHub", "Telegram"].map((name) => {
+      {["X", "GitHub", "Telegram", "CoinGecko"].map((name) => {
         const icon =
           name === "GitHub" ? (
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -33,6 +37,19 @@ export function Socials({ onSelect }: { onSelect: (name: string) => void }) {
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3l-4.9-7.4L5.5 22H2.3l7.5-8.6L.8 2h6.5l4.5 6.8L18.9 2Zm-1.1 18h1.7L6.4 3.9H4.6L17.8 20Z"
+                fill="currentColor"
+              />
+            </svg>
+          ) : name === "CoinGecko" ? (
+            // A gecko silhouette would be unreadable at 24px and is their trademark besides. A
+            // price mark reads instantly at this size and claims nothing that is not ours.
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 1.6a10.4 10.4 0 1 0 0 20.8 10.4 10.4 0 0 0 0-20.8Zm0 1.9a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17Z"
+                fill="currentColor"
+              />
+              <path
+                d="M7.2 14.6h1.9l1.6-3.1 1.9 4.3 1.8-5.4 1.2 2.6h1.9l-2.6-5.4-2 5.7-1.9-4.4-1.9 3.6H7.2Z"
                 fill="currentColor"
               />
             </svg>
