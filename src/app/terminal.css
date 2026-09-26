@@ -1237,3 +1237,24 @@
   font: 10px/1.5 var(--mono);
   color: var(--t-dim);
 }
+
+/* ── Reminders ───────────────────────────────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] .reminders {
+  margin-top: 12px;
+}
+.dashboard[data-skin="terminal"] .reminders-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.dashboard[data-skin="terminal"] .reset-demo.is-armed {
+  border-color: var(--t-accent);
+  color: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .reminders .ticket-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}

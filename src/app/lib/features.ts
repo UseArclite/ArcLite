@@ -73,7 +73,9 @@ export type Feature =
   /** #28 — The venue's cumulative record, including the unflattering rows. */
   | "venue-record"
   /** Notes stranded in a retired pool, and what moving them costs. */
-  | "pool-migration";
+  | "pool-migration"
+  /** #30 — Be told when a guard clears or a window is about to seal, from this browser only. */
+  | "reminders";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be

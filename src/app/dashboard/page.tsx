@@ -25,6 +25,7 @@ import { PrivacyMeter } from "../components/privacy-meter";
 import { MarketChart } from "../components/market-chart";
 import { CrossingLine } from "../components/crossing-line";
 import { SupplyNotice } from "../components/supply-notice";
+import { Reminders } from "../components/reminders";
 import { VenueStatus } from "../components/venue-status";
 import { WindowHistory } from "../components/window-history";
 import { VenueRecord } from "../components/venue-record";
@@ -492,6 +493,7 @@ export default function Dashboard() {
                     {market.detail[asset] ?? (blocked ? "Asset deferred." : "Reference accepted.")}
                   </span>
                 </div>
+                {feature("reminders") && <Reminders symbol={asset} />}
                 <Detail label={t("What a guard is")}>
                   <p>
                     {t(
