@@ -4,6 +4,7 @@ import {
   newOutcomes,
   resolutionOf,
   type WatchedReceipt,
+  cuesSettlement,
 } from "../settlement-watch";
 
 /**
@@ -137,5 +138,20 @@ describe("what it says", () => {
       .announce[0]!;
     expect(describeOutcome(o, names).title).toContain("deferred");
     expect(describeOutcome(o, names).body).toContain("CLSK");
+  });
+});
+
+describe("the settle tone", () => {
+  test("fires when something crossed", () => {
+    expect(cuesSettlement("filled")).toBe(true);
+    expect(cuesSettlement("partial")).toBe(true);
+  });
+
+  test("stays silent when nothing crossed", () => {
+    // The tone rises, and a rising tone means it worked. None of these did: the note came back
+    // untouched in all three, and a triumphant sound over one would be a lie told in audio.
+    expect(cuesSettlement("unmatched")).toBe(false);
+    expect(cuesSettlement("deferred")).toBe(false);
+    expect(cuesSettlement("void")).toBe(false);
   });
 });

@@ -51,8 +51,10 @@ export function VaultPanel() {
       </div>
 
       {/* Above the lock/unlock branch, because the first two steps happen while still locked and
-          a guide that only appeared after unlocking would miss the people who need it most. */}
-      {feature("first-run") && <FirstRun />}
+          a guide that only appeared after unlocking would miss the people who need it most.
+          Suppressed when the quickstart flow is on: it covers the same four steps and performs
+          them, and two guides naming the same sequence is worse guidance than either alone. */}
+      {feature("first-run") && !feature("quickstart") && <FirstRun />}
 
       {vault.status !== "unlocked" ? (
         <>

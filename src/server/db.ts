@@ -56,8 +56,32 @@ export interface LockResult {
 }
 
 /**
+ * A cron lease's name, scoped to the chain it advances.
+ *
+ * The lease is the venue's only mutual exclusion. `relayer.ts` is explicit that nonces are
+ * serialised by this lock rather than by the RPC, so whatever holds `tick` is the only thing
+ * allowed to be sending — which is correct, and was being keyed on the bare word `tick`.
+ *
+ * That made the name a collision waiting for a second tick to exist. Any other process running
+ * the same cron — a testnet deployment, or a developer's `bun run dev` — takes the same row and
+ * production's next tick finds the lease held and returns `skipped`. The venue would then look
+ * healthy while quietly advancing no windows, which is the failure mode this codebase keeps
+ * finding: a check that passes because nothing ran.
+ *
+ * Two chains are two independent nonce sequences and two independent sets of windows, so they
+ * want two leases. The `name` column is text with a primary key on it, so `tick:4663` and
+ * `tick:46630` are simply different rows and this needs no migration. It also makes `cron_runs`
+ * readable per chain, which the bare name did not.
+ */
+export function lockName(base: string, chainId: number): string {
+  return `${base}:${chainId}`;
+}
+
+/**
  * Cron mutual exclusion. Returns false when another invocation holds an unexpired lease — the
  * caller should return 200 immediately, never 500, or Vercel retries and floods the logs.
+ *
+ * Pass a name from `lockName`: an unscoped one is shared with every other chain's cron.
  */
 export async function tryLock(name: string, ttlSeconds: number): Promise<LockResult> {
   const holder = `${process.env.VERCEL_DEPLOYMENT_ID ?? "local"}:${crypto.randomUUID()}`;

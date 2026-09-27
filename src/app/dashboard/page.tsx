@@ -21,6 +21,8 @@ import {
 import { AssetMark } from "../components/asset-mark";
 import { WindowRitual } from "../components/window-ritual";
 import { SettlementWatch } from "../components/settlement-watch";
+import { Quickstart } from "../components/quickstart";
+import { OrderingProof } from "../components/ordering-proof";
 import { PrivacyMeter } from "../components/privacy-meter";
 import { MarketChart } from "../components/market-chart";
 import { CrossingLine } from "../components/crossing-line";
@@ -267,6 +269,11 @@ export default function Dashboard() {
             </TabsList>
             <ConnectButton />
           </div>
+          {/* Above the tabs, not inside one: the flow spans depositing and ordering, and a guide
+              that lived in a tab would disappear at the step that sends somebody to another one.
+              It renders nothing once this vault has a receipt. */}
+          {feature("quickstart") && <Quickstart />}
+
           <TabsContent value="trade">
             <div className="trade-grid">
               <section className="market-panel">
@@ -523,6 +530,10 @@ export default function Dashboard() {
                   all comes before whether its books balance, and inserted later it took the
                   solvency panel's column instead. */}
               {feature("venue-status") && <VenueStatus />}
+              {/* Directly under the venue's own status, because it is the same kind of claim —
+                  something checkable about how this venue behaves — and it is the strongest one
+                  here, so it should not be below the fold on a tab people open to check. */}
+              {feature("ordering-proof") && <OrderingProof />}
               {feature("venue-record") && <VenueRecord />}
               <section className="proof-orbit-panel">
                 <span className="eyebrow">{t("PUBLIC ACCOUNTABILITY")}</span>

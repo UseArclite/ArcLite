@@ -4,7 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Bell, BellOff, ExternalLink, X } from "lucide-react";
 import { CHAINS, clientChainId } from "@/lib/chain/chains";
 import { useVault } from "./vault-provider";
+import { useSound } from "./immersion";
 import {
+  cuesSettlement,
   describeOutcome,
   newOutcomes,
   type Outcome,
@@ -65,6 +67,7 @@ type Permission = "default" | "granted" | "denied" | "unsupported";
 export function SettlementWatch() {
   const t = useT();
   const vault = useVault();
+  const { cue } = useSound();
   const explorer = CHAINS[clientChainId()].blockExplorers.default.url;
 
   const [toasts, setToasts] = useState<(Outcome & { id: string })[]>([]);
@@ -116,6 +119,13 @@ export function SettlementWatch() {
     (outcome: Outcome) => {
       const id = `${outcome.commitment}-${outcome.resolution}`;
       setToasts((prior) => [{ ...outcome, id }, ...prior].slice(0, 3));
+
+      // The tone belongs here rather than on the window's status, because this is the only place
+      // that knows the outcome is *yours* and is *new*. Watching `status` reach SETTLED would play
+      // it every five minutes for every window on the venue, seeded history included.
+      //
+      // `cue` is already a no-op unless somebody turned sound on, so there is nothing to guard.
+      if (cuesSettlement(outcome.resolution)) cue("settle");
       if (typeof Notification !== "undefined" && Notification.permission === "granted") {
         const { title, body } = describeOutcome(outcome, naming);
         try {
@@ -128,7 +138,7 @@ export function SettlementWatch() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [vault.poolAssets],
+    [vault.poolAssets, cue],
   );
 
   useEffect(() => {

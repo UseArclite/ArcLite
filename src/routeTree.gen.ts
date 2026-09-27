@@ -26,6 +26,7 @@ import { Route as ApiCronTickRouteImport } from './routes/api/cron/tick'
 import { Route as ApiMarketAssetsRouteImport } from './routes/api/market/assets'
 import { Route as ApiMarketCrossingRouteImport } from './routes/api/market/crossing'
 import { Route as ApiMarketDepthRouteImport } from './routes/api/market/depth'
+import { Route as ApiMarketOrderingRouteImport } from './routes/api/market/ordering'
 import { Route as ApiMarketRecordRouteImport } from './routes/api/market/record'
 import { Route as ApiMarketSeriesRouteImport } from './routes/api/market/series'
 import { Route as ApiMarketSupplyRouteImport } from './routes/api/market/supply'
@@ -124,6 +125,11 @@ const ApiMarketDepthRoute = ApiMarketDepthRouteImport.update({
   path: '/api/market/depth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMarketOrderingRoute = ApiMarketOrderingRouteImport.update({
+  id: '/api/market/ordering',
+  path: '/api/market/ordering',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMarketRecordRoute = ApiMarketRecordRouteImport.update({
   id: '/api/market/record',
   path: '/api/market/record',
@@ -203,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/api/market/assets': typeof ApiMarketAssetsRoute
   '/api/market/crossing': typeof ApiMarketCrossingRoute
   '/api/market/depth': typeof ApiMarketDepthRoute
+  '/api/market/ordering': typeof ApiMarketOrderingRoute
   '/api/market/record': typeof ApiMarketRecordRoute
   '/api/market/series': typeof ApiMarketSeriesRoute
   '/api/market/supply': typeof ApiMarketSupplyRoute
@@ -234,6 +241,7 @@ export interface FileRoutesByTo {
   '/api/market/assets': typeof ApiMarketAssetsRoute
   '/api/market/crossing': typeof ApiMarketCrossingRoute
   '/api/market/depth': typeof ApiMarketDepthRoute
+  '/api/market/ordering': typeof ApiMarketOrderingRoute
   '/api/market/record': typeof ApiMarketRecordRoute
   '/api/market/series': typeof ApiMarketSeriesRoute
   '/api/market/supply': typeof ApiMarketSupplyRoute
@@ -266,6 +274,7 @@ export interface FileRoutesById {
   '/api/market/assets': typeof ApiMarketAssetsRoute
   '/api/market/crossing': typeof ApiMarketCrossingRoute
   '/api/market/depth': typeof ApiMarketDepthRoute
+  '/api/market/ordering': typeof ApiMarketOrderingRoute
   '/api/market/record': typeof ApiMarketRecordRoute
   '/api/market/series': typeof ApiMarketSeriesRoute
   '/api/market/supply': typeof ApiMarketSupplyRoute
@@ -299,6 +308,7 @@ export interface FileRouteTypes {
     | '/api/market/assets'
     | '/api/market/crossing'
     | '/api/market/depth'
+    | '/api/market/ordering'
     | '/api/market/record'
     | '/api/market/series'
     | '/api/market/supply'
@@ -330,6 +340,7 @@ export interface FileRouteTypes {
     | '/api/market/assets'
     | '/api/market/crossing'
     | '/api/market/depth'
+    | '/api/market/ordering'
     | '/api/market/record'
     | '/api/market/series'
     | '/api/market/supply'
@@ -361,6 +372,7 @@ export interface FileRouteTypes {
     | '/api/market/assets'
     | '/api/market/crossing'
     | '/api/market/depth'
+    | '/api/market/ordering'
     | '/api/market/record'
     | '/api/market/series'
     | '/api/market/supply'
@@ -393,6 +405,7 @@ export interface RootRouteChildren {
   ApiMarketAssetsRoute: typeof ApiMarketAssetsRoute
   ApiMarketCrossingRoute: typeof ApiMarketCrossingRoute
   ApiMarketDepthRoute: typeof ApiMarketDepthRoute
+  ApiMarketOrderingRoute: typeof ApiMarketOrderingRoute
   ApiMarketRecordRoute: typeof ApiMarketRecordRoute
   ApiMarketSeriesRoute: typeof ApiMarketSeriesRoute
   ApiMarketSupplyRoute: typeof ApiMarketSupplyRoute
@@ -528,6 +541,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMarketDepthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/market/ordering': {
+      id: '/api/market/ordering'
+      path: '/api/market/ordering'
+      fullPath: '/api/market/ordering'
+      preLoaderRoute: typeof ApiMarketOrderingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/market/record': {
       id: '/api/market/record'
       path: '/api/market/record'
@@ -633,6 +653,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMarketAssetsRoute: ApiMarketAssetsRoute,
   ApiMarketCrossingRoute: ApiMarketCrossingRoute,
   ApiMarketDepthRoute: ApiMarketDepthRoute,
+  ApiMarketOrderingRoute: ApiMarketOrderingRoute,
   ApiMarketRecordRoute: ApiMarketRecordRoute,
   ApiMarketSeriesRoute: ApiMarketSeriesRoute,
   ApiMarketSupplyRoute: ApiMarketSupplyRoute,

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { resolveChainId } from "@/lib/chain/chains";
-import { hasDb, recordRun, releaseLock, tryLock } from "@/server/db";
+import { hasDb, recordRun, releaseLock, tryLock, lockName } from "@/server/db";
 import { advanceWindows } from "@/server/windows";
 import { enforceDrift } from "@/server/supply-watch";
 import { syncWindowsToChain } from "@/server/chain-windows";
@@ -31,11 +31,13 @@ export const Route = createFileRoute("/api/cron/tick")({
         if (!hasDb()) return Response.json({ skipped: "no DATABASE_URL" }, { status: 200 });
 
         const started = Date.now();
-        const { acquired, holder } = await tryLock("tick", 55);
+        // Resolved before the lease, because the lease is named after it.
+        const chainId = resolveChainId();
+        const lease = lockName("tick", chainId);
+        const { acquired, holder } = await tryLock(lease, 55);
         if (!acquired) return Response.json({ skipped: "locked" }, { status: 200 });
 
         try {
-          const chainId = resolveChainId();
           const windowSeconds = Number(process.env.ARCLITE_WINDOW_SECONDS ?? 300);
           const epochSeconds = Number(process.env.ARCLITE_EPOCH_SECONDS ?? 3600);
           const result = await advanceWindows(chainId, windowSeconds, epochSeconds);
@@ -124,15 +126,15 @@ export const Route = createFileRoute("/api/cron/tick")({
             drift,
             ms: Date.now() - started,
           };
-          await recordRun("tick", holder, true, actions as never);
+          await recordRun(lease, holder, true, actions as never);
           return Response.json({ ok: true, ...actions }, { status: 200 });
         } catch (error) {
           const message = (error as Error).message;
-          await recordRun("tick", holder, false, { ms: Date.now() - started }, message).catch(
+          await recordRun(lease, holder, false, { ms: Date.now() - started }, message).catch(
             () => {},
           );
           // advance_windows is idempotent, so a failed tick is safe to retry immediately.
-          await releaseLock("tick").catch(() => {});
+          await releaseLock(lease).catch(() => {});
           return Response.json({ ok: false, error: message }, { status: 200 });
         }
       },

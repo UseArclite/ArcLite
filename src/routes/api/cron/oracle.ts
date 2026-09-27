@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { resolveChainId } from "@/lib/chain/chains";
-import { hasDb, recordRun, releaseLock, tryLock } from "@/server/db";
+import { hasDb, recordRun, releaseLock, tryLock, lockName } from "@/server/db";
 import { syncPrices, syncRegistry } from "@/server/sync";
 import { watchSupply } from "@/server/supply-watch";
 import { authorizeCron } from "@/server/cron-auth";
@@ -37,14 +37,16 @@ export const Route = createFileRoute("/api/cron/oracle")({
         }
 
         const started = Date.now();
-        const { acquired, holder } = await tryLock("oracle", 55);
+        // Resolved before the lease, because the lease is named after it.
+        const chainId = resolveChainId();
+        const lease = lockName("oracle", chainId);
+        const { acquired, holder } = await tryLock(lease, 55);
         if (!acquired) {
           // Another invocation holds the lease. Not an error — overlapping ticks are expected.
           return Response.json({ skipped: "locked" }, { status: 200 });
         }
 
         try {
-          const chainId = resolveChainId();
           // The registry moves on the order of days; refresh it hourly, not every minute.
           // `?full=1` forces it, for first runs and for after a schema change.
           const forced = new URL(request.url).searchParams.get("full") === "1";
@@ -82,16 +84,16 @@ export const Route = createFileRoute("/api/cron/oracle")({
             supplyErrors: supply.errors.length,
             ms: Date.now() - started,
           };
-          await recordRun("oracle", holder, true, actions);
+          await recordRun(lease, holder, true, actions);
           return Response.json({ ok: true, ...actions }, { status: 200 });
         } catch (error) {
           const message = (error as Error).message;
-          await recordRun("oracle", holder, false, { ms: Date.now() - started }, message).catch(
+          await recordRun(lease, holder, false, { ms: Date.now() - started }, message).catch(
             () => {},
           );
           // Every write here is an idempotent upsert, so a failed run is safe to retry
           // immediately. Holding the lease for its full TTL would only delay recovery.
-          await releaseLock("oracle").catch(() => {});
+          await releaseLock(lease).catch(() => {});
           return Response.json({ ok: false, error: message }, { status: 200 });
         }
       },

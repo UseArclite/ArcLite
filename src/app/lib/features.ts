@@ -75,7 +75,13 @@ export type Feature =
   /** Notes stranded in a retired pool, and what moving them costs. */
   | "pool-migration"
   /** #30 — Be told when a guard clears or a window is about to seal, from this browser only. */
-  | "reminders";
+  | "reminders"
+  /** #34 — Split one order across windows, for as long as the vault stays open. */
+  | "order-plan"
+  /** A first private trade on mainnet, with every amount pre-computed. */
+  | "quickstart"
+  /** Seal-before-price, verified from the visitor's own RPC. */
+  | "ordering-proof";
 
 /**
  * Parsed once. `import.meta.env` is inlined at build time, so re-reading it per call would be

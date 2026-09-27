@@ -141,3 +141,22 @@ export function describeOutcome(
       };
   }
 }
+
+/**
+ * Whether an outcome earns the settle tone.
+ *
+ * `cue('settle')` rises — 660 Hz to 880 Hz — and a rising tone means it worked. Three of the five
+ * resolutions are not that: `unmatched` found nobody on the other side, `deferred` hit a guard, and
+ * `void` never settled at all. In each of those the note is untouched, and playing a triumphant
+ * note over one would be telling somebody their order crossed when it did not.
+ *
+ * So the tone fires only when something actually crossed. This matters more here than it would at a
+ * busier venue: of 1,071 settled windows on mainnet, none has crossed yet, so a cue on every
+ * settlement would be a sound that never once meant what it sounded like.
+ *
+ * The toast and the notification still fire for every resolution. Those carry words, and words can
+ * say "nobody was on the other side"; a tone cannot.
+ */
+export function cuesSettlement(resolution: Resolution): boolean {
+  return resolution === "filled" || resolution === "partial";
+}

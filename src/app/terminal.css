@@ -1258,3 +1258,217 @@
   gap: 6px;
   margin-top: 8px;
 }
+
+/* ── Order plan ──────────────────────────────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] .order-plan {
+  margin-top: 14px;
+  padding: 11px 13px;
+  border: 1px solid var(--t-line);
+  background: #0e1526;
+}
+.dashboard[data-skin="terminal"] .order-plan.is-paused {
+  border-color: var(--t-warn);
+}
+.dashboard[data-skin="terminal"] .order-plan.is-finished {
+  border-color: var(--t-good);
+}
+.dashboard[data-skin="terminal"] .order-plan-start {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.dashboard[data-skin="terminal"] .order-plan-start label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font: 10px/1.3 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .order-plan-start input {
+  width: 48px;
+  padding: 4px 5px;
+  border: 1px solid var(--t-line);
+  background: var(--t-bg);
+  font: 12px/1 var(--mono);
+  color: var(--t-text);
+  text-align: center;
+}
+.dashboard[data-skin="terminal"] .order-plan-live {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.dashboard[data-skin="terminal"] .order-plan-live b {
+  font: 11px/1.5 var(--mono);
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .order-plan-controls {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.dashboard[data-skin="terminal"] .order-plan-dots {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+}
+.dashboard[data-skin="terminal"] .order-plan-dots span {
+  width: 100%;
+  max-width: 30px;
+  height: 3px;
+  background: var(--t-line);
+}
+.dashboard[data-skin="terminal"] .order-plan-dots span.is-done {
+  background: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .order-plan .ticket-note,
+.dashboard[data-skin="terminal"] .order-plan .ticket-error {
+  margin-top: 8px;
+}
+
+/* ── Quickstart ──────────────────────────────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] .quickstart {
+  margin: 0 0 18px;
+  padding: 15px 17px;
+  border: 1px solid var(--t-accent);
+  background: #0e1526;
+}
+.dashboard[data-skin="terminal"] .quickstart.is-done {
+  border-color: var(--t-good);
+}
+.dashboard[data-skin="terminal"] .quickstart-rail {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 12px 0 16px;
+  padding: 0;
+}
+.dashboard[data-skin="terminal"] .quickstart-rail li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font: 10px/1.3 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .quickstart-rail li.is-current {
+  color: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .quickstart-rail li.is-done {
+  color: var(--t-good);
+}
+.dashboard[data-skin="terminal"] .quickstart-dot {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--t-line);
+  border-radius: 50%;
+  font: 10px/1 var(--mono);
+}
+.dashboard[data-skin="terminal"] .quickstart-rail li.is-current .quickstart-dot {
+  border-color: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .quickstart-rail li.is-done .quickstart-dot {
+  border-color: var(--t-good);
+}
+.dashboard[data-skin="terminal"] .quickstart-action h3 {
+  margin: 0 0 6px;
+  font: 14px/1.35 var(--mono);
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .quickstart-action p {
+  margin: 0 0 12px;
+  font: 11px/1.55 var(--mono);
+  color: var(--t-dim);
+  max-width: 62ch;
+}
+.dashboard[data-skin="terminal"] .quickstart .spin {
+  animation: quickstart-spin 1s linear infinite;
+}
+
+/* ── Ordering proof ──────────────────────────────────────────────────────── */
+
+.dashboard[data-skin="terminal"] .ordering-proof {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--t-good);
+  background: #0e1526;
+}
+.dashboard[data-skin="terminal"] .ordering-proof.is-inverted {
+  border-color: var(--t-bad);
+}
+.dashboard[data-skin="terminal"] .ordering-proof.is-same-block {
+  border-color: var(--t-warn);
+}
+.dashboard[data-skin="terminal"] .ordering-headline {
+  margin: 10px 0 12px;
+  font: 12px/1.5 var(--mono);
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .ordering-windows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.dashboard[data-skin="terminal"] .ordering-windows li {
+  padding: 10px 12px;
+  border: 1px solid var(--t-line);
+}
+.dashboard[data-skin="terminal"] .ordering-windows li.is-inverted {
+  border-color: var(--t-bad);
+}
+.dashboard[data-skin="terminal"] .ordering-seq {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  font: 11px/1.3 var(--mono);
+  color: var(--t-text);
+}
+.dashboard[data-skin="terminal"] .ordering-seq small {
+  font: 10px/1.3 var(--mono);
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .ordering-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 8px 0;
+}
+.dashboard[data-skin="terminal"] .ordering-step {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: 10px/1.35 var(--mono);
+}
+.dashboard[data-skin="terminal"] .ordering-step b {
+  color: var(--t-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.dashboard[data-skin="terminal"] .ordering-step a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--t-accent);
+}
+.dashboard[data-skin="terminal"] .ordering-step em {
+  color: var(--t-dim);
+}
+.dashboard[data-skin="terminal"] .ordering-statement {
+  margin: 0;
+  font: 10px/1.5 var(--mono);
+  color: var(--t-dim);
+}

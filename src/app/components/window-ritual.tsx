@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useWindow, type WindowStatus } from "./market-provider";
-import { useSound } from "./immersion";
 import { feature } from "../lib/features";
 import { venuePulse } from "../lib/venue-pulse";
 import { useT } from "../lib/i18n";
@@ -88,17 +87,16 @@ const ENDED: Record<string, string> = {
 export function WindowRitual() {
   const t = useT();
   const { window: live, secondsToSeal, loading } = useWindow();
-  const { cue } = useSound();
 
-  // Fire the settle tone once per window, on the transition rather than on every poll — the
-  // window endpoint answers every five seconds and a cue on each of those would be an alarm.
-  const lastSettled = useRef<number | null>(null);
-  useEffect(() => {
-    if (!live || live.phase !== 4) return;
-    if (lastSettled.current === live.seq) return;
-    lastSettled.current = live.seq;
-    cue("settle");
-  }, [live, cue]);
+  // The settle tone deliberately does *not* fire here.
+  //
+  // It used to: once per window, on the transition into phase 4. But every window reaches phase 4,
+  // whether or not anyone traded in it — 1,071 have on mainnet and none of them crossed — so with
+  // sound on that was a rising tone every five minutes, forever, announcing nothing. A cue that
+  // fires regardless of whether anything happened teaches people to turn sound off.
+  //
+  // It now fires from `settlement-watch.tsx`, which is the only place that knows an outcome is
+  // *yours* and is *new*, and only when something actually crossed. See `cuesSettlement`.
 
   // Flash the count when it moves. The venue's heartbeat, and the only evidence on the page that
   // anyone else is in this window — which is decision-relevant on a batch auction, where an

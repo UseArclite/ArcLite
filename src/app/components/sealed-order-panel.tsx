@@ -10,6 +10,7 @@ import { feature } from "../lib/features";
 import { AmountField } from "./amount-field";
 import { displayAmount, formatAmount } from "../lib/units";
 import { Detail } from "./panel-detail";
+import { OrderPlanPanel } from "./order-plan";
 import { useT } from "../lib/i18n";
 
 /**
@@ -237,6 +238,18 @@ export function SealedOrderPanel() {
         <p role="status" className={state.ok ? "ticket-note" : "ticket-error"}>
           {state.message}
         </p>
+      )}
+
+      {/* Below the single-order button, because that is the relationship: the plan submits this
+          same order once per window. Above the reference caveat, which applies to every slice. */}
+      {feature("order-plan") && (
+        <OrderPlanPanel
+          assetId={assetId}
+          units={units}
+          side={side}
+          symbol={baseAsset?.symbol ?? `asset ${assetId}`}
+          decimals={baseAsset?.decimals ?? 18}
+        />
       )}
 
       <p className="ticket-note">
